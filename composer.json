@@ -1,0 +1,23 @@
+{
+    "name": "maria/seo-meta",
+    "description": "Sitemap, meta/OG/Twitter tags y JSON-LD (DiscussionForumPosting) por tema de debate, con imagen 16:9 generada con Gemini.",
+    "type": "flarum-extension",
+    "license": "MIT",
+    "require": {
+        "flarum/core": "^1.8",
+        "flarum/likes": "^1.8",
+        "flarum/approval": "^1.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Maria\\SeoMeta\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "MarIA SEO Meta",
+            "category": "feature"
+        }
+    },
+    "minimum-stability": "stable"
+}
