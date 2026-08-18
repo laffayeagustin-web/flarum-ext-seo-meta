@@ -20,8 +20,8 @@ comunidad [MarIA GroWth](https://maria.ar/).
   configurada.
 - **Home del foro** (`/` y `/all`): title, meta description, Open Graph, Twitter
   Card y JSON-LD `CollectionPage` (con `isPartOf`/`about` apuntando a la
-  organizacion, e `ItemList` con los temas activos) para reforzar GEO
-  (Generative Engine Optimization).
+  organizacion, e `ItemList` con los temas activos, cada uno con su `author`)
+  para reforzar GEO (Generative Engine Optimization).
 - **`seo-meta:backfill-images`**: comando de consola para generar la imagen 16:9
   de temas existentes que todavia no la tienen.
 
