@@ -134,22 +134,34 @@ class InjectForumIndexSeoTags
     private function buildItemList(): array
     {
         $rows = $this->db->table('discussions')
-            ->where('is_private', false)
-            ->whereNull('hidden_at')
-            ->where('is_approved', true)
-            ->orderByDesc('last_posted_at')
+            ->leftJoin('users', 'users.id', '=', 'discussions.user_id')
+            ->where('discussions.is_private', false)
+            ->whereNull('discussions.hidden_at')
+            ->where('discussions.is_approved', true)
+            ->orderByDesc('discussions.last_posted_at')
             ->limit(10)
-            ->get(['id', 'slug', 'title']);
+            ->get([
+                'discussions.id',
+                'discussions.slug',
+                'discussions.title',
+                'users.username',
+            ]);
 
         $items = [];
         $position = 1;
 
         foreach ($rows as $row) {
+            $authorName = $row->username ?? 'Comunidad Campus MarIA';
+
             $items[] = [
                 '@type' => 'ListItem',
                 'position' => $position++,
                 'url' => $this->url->to('forum')->route('discussion', ['id' => "{$row->id}-{$row->slug}"]),
                 'name' => $row->title,
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $authorName,
+                ],
             ];
         }
 
