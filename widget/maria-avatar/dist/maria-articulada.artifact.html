@@ -1,0 +1,1637 @@
+<title>MarIA articulada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Karla:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+/* =========================================================================
+   MarIA Avatar — muñeco articulado + globo de chat
+   Todo el estilo cuelga de variables CSS para poder calzarlo con maria.ar
+   sin tocar el JS. Ver README.md → "Marca".
+   ========================================================================= */
+
+.ma-root {
+  --ma-accent: #7c3aed;
+  --ma-accent-2: #f0409f;
+  --ma-accent-soft: #ede7ff;
+  --ma-ink: #17122a;
+  --ma-ink-soft: #6a6382;
+  --ma-surface: #ffffff;
+  --ma-surface-2: #f6f4fb;
+  --ma-line: #e6e1f2;
+  --ma-radius: 22px;
+  --ma-radius-sm: 14px;
+  --ma-shadow: 0 18px 50px -12px rgba(23, 18, 42, .28), 0 2px 8px rgba(23, 18, 42, .06);
+  --ma-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --ma-dock-size: 118px;   /* alto de MarIA cuando queda chiquita abajo a la izquierda */
+  --ma-gap: 16px;          /* margen contra los bordes de la pantalla */
+  --ma-z: 2147483000;
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--ma-z);
+  pointer-events: none;           /* solo las piezas concretas reciben eventos */
+  font-family: var(--ma-font);
+  color: var(--ma-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ma-root:not([data-theme="light"]) {
+    --ma-accent-soft: #2a2140;
+    --ma-ink: #f4f1ff;
+    --ma-ink-soft: #a9a2c4;
+    --ma-surface: #1b1630;
+    --ma-surface-2: #241d3d;
+    --ma-line: #342b52;
+    --ma-shadow: 0 18px 50px -12px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .35);
+  }
+}
+.ma-root[data-theme="dark"] {
+  --ma-accent-soft: #2a2140;
+  --ma-ink: #f4f1ff;
+  --ma-ink-soft: #a9a2c4;
+  --ma-surface: #1b1630;
+  --ma-surface-2: #241d3d;
+  --ma-line: #342b52;
+  --ma-shadow: 0 18px 50px -12px rgba(0, 0, 0, .6), 0 2px 8px rgba(0, 0, 0, .35);
+}
+
+.ma-root * { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------- muñeca */
+
+.ma-figure {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 620ms cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+.ma-figure:focus-visible { outline: none; }
+.ma-figure:focus-visible .ma-stage { filter: drop-shadow(0 0 0 3px var(--ma-accent)); }
+
+.ma-stage {
+  position: relative;
+  transform-style: flat;
+}
+
+/* Cada hueso es una ventana al "sheet" (el frame del gif o el SVG maestro).
+   Los hijos van dentro del div del padre, así heredan su rotación. */
+.ma-bone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-box: border-box;
+  backface-visibility: hidden;
+}
+.ma-art {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+.ma-overlay {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+}
+
+/* Sombra en el piso: da peso al muñeco cuando "camina" o saluda */
+.ma-shadow {
+  position: absolute;
+  left: 50%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(23, 18, 42, .26), rgba(23, 18, 42, 0) 70%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Aro que late detrás de MarIA cuando está en modo "vení, tocame" */
+.ma-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--ma-accent) 26%, transparent), transparent 62%);
+  opacity: 0;
+  transition: opacity .4s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.ma-root[data-state="hero"] .ma-halo { animation: ma-halo 3.6s ease-in-out infinite; }
+@keyframes ma-halo {
+  0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.86); }
+  50%      { opacity: .9; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+/* --------------------------------------------------------------- el dedo */
+
+.ma-finger {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 74px;
+  height: 96px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform-origin: 22% 14%;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .45s ease;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+.ma-finger[data-visible="1"] { opacity: 1; }
+.ma-finger svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ma-finger:focus-visible { outline: 3px solid var(--ma-accent); outline-offset: 6px; border-radius: 12px; }
+
+/* onda que sale de la yema cuando el dedo "toca" */
+.ma-finger .ma-tap-ring {
+  transform-origin: 26px 14px;
+  opacity: 0;
+}
+.ma-finger[data-tapping="1"] .ma-tap-ring { animation: ma-tap 620ms ease-out; }
+@keyframes ma-tap {
+  0%   { opacity: .85; transform: scale(.2); }
+  100% { opacity: 0;   transform: scale(2.4); }
+}
+
+/* rastro suave para que se lea el recorrido por la pantalla */
+.ma-finger-trail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ma-accent);
+  opacity: .16;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ---------------------------------------------------------------- globo */
+
+.ma-chat {
+  position: fixed;
+  left: var(--ma-gap);
+  bottom: calc(var(--ma-dock-size) + var(--ma-gap) + 18px);
+  width: min(372px, calc(100vw - var(--ma-gap) * 2));
+  max-height: min(64vh, 520px);
+  display: flex;
+  flex-direction: column;
+  background: var(--ma-surface);
+  border: 1px solid var(--ma-line);
+  border-radius: var(--ma-radius);
+  box-shadow: var(--ma-shadow);
+  pointer-events: auto;
+  overflow: hidden;
+  transform-origin: 22% 100%;
+  opacity: 0;
+  transform: translateY(14px) scale(.94);
+  visibility: hidden;
+  transition: opacity .28s ease, transform .42s cubic-bezier(.22, 1, .36, 1), visibility 0s linear .42s;
+}
+.ma-root[data-state="chat"] .ma-chat {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition: opacity .3s ease, transform .5s cubic-bezier(.22, 1, .36, 1), visibility 0s;
+}
+
+/* la colita del globo apunta a MarIA, abajo a la izquierda */
+.ma-chat::after {
+  content: "";
+  position: absolute;
+  left: 30px;
+  bottom: -9px;
+  width: 20px;
+  height: 20px;
+  background: var(--ma-surface);
+  border-right: 1px solid var(--ma-line);
+  border-bottom: 1px solid var(--ma-line);
+  transform: rotate(45deg);
+  border-bottom-right-radius: 4px;
+}
+
+.ma-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  background: linear-gradient(120deg, var(--ma-accent), var(--ma-accent-2));
+  color: #fff;
+  flex: none;
+}
+.ma-chat-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .22) center/cover no-repeat;
+  border: 1.5px solid rgba(255, 255, 255, .55);
+  flex: none;
+}
+.ma-chat-title { font-size: 14px; font-weight: 650; line-height: 1.2; letter-spacing: -.01em; }
+.ma-chat-status { font-size: 11.5px; opacity: .85; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.ma-chat-status i {
+  width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, .7); animation: ma-pulse 2.4s infinite;
+}
+@keyframes ma-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, .7); }
+  70%  { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+.ma-chat-close {
+  margin-left: auto;
+  width: 30px; height: 30px;
+  border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+  color: #fff; font-size: 17px; line-height: 1;
+  cursor: pointer; flex: none;
+  display: grid; place-items: center;
+  transition: background .2s ease;
+}
+.ma-chat-close:hover { background: rgba(255, 255, 255, .3); }
+
+.ma-chat-body {
+  flex: 1 1 auto;
+  min-height: 90px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: var(--ma-surface-2);
+}
+.ma-msg {
+  max-width: 84%;
+  padding: 9px 13px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: var(--ma-radius-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+  animation: ma-msg-in .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes ma-msg-in { from { opacity: 0; transform: translateY(8px); } }
+.ma-msg[data-from="maria"] {
+  align-self: flex-start;
+  background: var(--ma-surface);
+  border: 1px solid var(--ma-line);
+  border-bottom-left-radius: 5px;
+}
+.ma-msg[data-from="user"] {
+  align-self: flex-end;
+  background: linear-gradient(120deg, var(--ma-accent), var(--ma-accent-2));
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.ma-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.ma-typing span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ma-ink-soft); opacity: .5;
+  animation: ma-dot 1.25s infinite;
+}
+.ma-typing span:nth-child(2) { animation-delay: .18s; }
+.ma-typing span:nth-child(3) { animation-delay: .36s; }
+@keyframes ma-dot { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-5px); opacity: .9; } }
+
+.ma-quick {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 0 14px 12px;
+  background: var(--ma-surface-2);
+}
+.ma-quick:empty { display: none; }
+.ma-quick button {
+  font: inherit; font-size: 12.5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ma-accent) 34%, var(--ma-line));
+  background: var(--ma-surface);
+  color: var(--ma-accent);
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
+}
+.ma-quick button:hover { background: var(--ma-accent-soft); transform: translateY(-1px); }
+
+.ma-chat-form {
+  display: flex; gap: 8px; align-items: center;
+  padding: 10px;
+  border-top: 1px solid var(--ma-line);
+  background: var(--ma-surface);
+  flex: none;
+}
+.ma-chat-form input {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: 14px;
+  padding: 10px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--ma-line);
+  background: var(--ma-surface-2);
+  color: var(--ma-ink);
+}
+.ma-chat-form input:focus { outline: 2px solid color-mix(in srgb, var(--ma-accent) 55%, transparent); outline-offset: 1px; }
+.ma-chat-form button {
+  width: 38px; height: 38px; flex: none;
+  border: 0; border-radius: 50%;
+  background: linear-gradient(120deg, var(--ma-accent), var(--ma-accent-2));
+  color: #fff; cursor: pointer;
+  display: grid; place-items: center;
+}
+.ma-chat-form button:disabled { opacity: .45; cursor: default; }
+.ma-chat-form svg { width: 17px; height: 17px; }
+
+/* burbujita suelta sobre la cabeza cuando MarIA habla sin el panel abierto */
+.ma-callout {
+  position: fixed;
+  max-width: 240px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  background: var(--ma-surface);
+  color: var(--ma-ink);
+  border: 1px solid var(--ma-line);
+  border-radius: var(--ma-radius-sm);
+  box-shadow: var(--ma-shadow);
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px) scale(.96);
+  transform-origin: 12% 100%;
+  transition: opacity .26s ease, transform .38s cubic-bezier(.22, 1, .36, 1);
+}
+.ma-callout[data-visible="1"] { opacity: 1; transform: none; }
+.ma-callout::after {
+  content: "";
+  position: absolute;
+  left: 18px; bottom: -7px;
+  width: 14px; height: 14px;
+  background: var(--ma-surface);
+  border-right: 1px solid var(--ma-line);
+  border-bottom: 1px solid var(--ma-line);
+  transform: rotate(45deg);
+}
+
+@media (max-width: 430px) {
+  .ma-root { --ma-dock-size: 96px; --ma-gap: 12px; }
+  .ma-chat { max-height: 58vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ma-figure, .ma-chat, .ma-callout { transition-duration: 1ms; }
+  .ma-root[data-state="hero"] .ma-halo { animation: none; opacity: .5; }
+  .ma-msg { animation: none; }
+  .ma-typing span { animation: none; }
+}
+
+/* --------------------------------------------------- modo "ver los cortes" */
+.ma-root.ma-debug .ma-bone { outline: 1px dashed rgba(240, 64, 159, .85); }
+.ma-root.ma-debug .ma-art { opacity: .82; }
+.ma-root.ma-debug .ma-bone::after {
+  content: attr(data-bone);
+  position: absolute;
+  left: 1px; top: 1px;
+  font: 600 8px/1 var(--ma-font);
+  color: #fff;
+  background: rgba(240, 64, 159, .9);
+  padding: 2px 3px;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+
+:root {
+  --tinta: #1b1628;
+  --tinta-2: #5f5878;
+  --papel: #f2f0f7;
+  --panel: #ffffff;
+  --linea: #e2ddef;
+  --violeta: #6d28d9;
+  --magenta: #d61f8b;
+  --corte: #e0409a;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --titulo: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --texto: "Karla", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tinta: #efecfa;
+    --tinta-2: #a49cc4;
+    --papel: #131020;
+    --panel: #1c1730;
+    --linea: #2e2748;
+    --violeta: #a78bfa;
+    --magenta: #f472b6;
+    --corte: #f472b6;
+  }
+}
+:root[data-theme="dark"] {
+  --tinta: #efecfa;
+  --tinta-2: #a49cc4;
+  --papel: #131020;
+  --panel: #1c1730;
+  --linea: #2e2748;
+  --violeta: #a78bfa;
+  --magenta: #f472b6;
+  --corte: #f472b6;
+}
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--texto);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.envoltorio {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 40px 340px;
+}
+@media (max-width: 430px) { .envoltorio { padding-block: 28px 300px; } }
+
+.encabezado { display: flex; flex-direction: column; gap: 14px; }
+.rotulo {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--magenta);
+}
+h1 {
+  font-family: var(--titulo);
+  font-weight: 800;
+  font-size: clamp(38px, 9vw, 66px);
+  line-height: .96;
+  letter-spacing: -.035em;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--violeta), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bajada { font-size: 18px; color: var(--tinta-2); margin: 0; max-width: 54ch; }
+
+h2 {
+  font-family: var(--titulo);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -.02em;
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+p { margin: 0 0 14px; max-width: 62ch; }
+section { margin-top: 46px; }
+strong { font-weight: 700; }
+
+.mandos { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+.mandos button {
+  font: 500 13.5px/1 var(--texto);
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--linea);
+  background: var(--panel);
+  color: var(--tinta);
+  cursor: pointer;
+  transition: border-color .16s ease, transform .16s ease, color .16s ease;
+}
+.mandos button:hover { border-color: var(--violeta); color: var(--violeta); transform: translateY(-1px); }
+.mandos button:focus-visible { outline: 2px solid var(--violeta); outline-offset: 2px; }
+.mandos button[data-do="debug"][aria-pressed="true"] {
+  border-color: var(--corte); color: var(--corte);
+  background: color-mix(in srgb, var(--corte) 9%, var(--panel));
+}
+
+.pasos { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; }
+@media (min-width: 620px) { .pasos { grid-template-columns: repeat(3, 1fr); } }
+.paso { background: var(--panel); padding: 18px 16px; display: flex; flex-direction: column; gap: 7px; }
+.paso .n { font-family: var(--mono); font-size: 11px; color: var(--magenta); letter-spacing: .1em; }
+.paso h3 { font-family: var(--titulo); font-weight: 600; font-size: 16px; margin: 0; letter-spacing: -.01em; }
+.paso p { font-size: 14px; color: var(--tinta-2); margin: 0; }
+
+.arbol {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.75;
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 14px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  color: var(--tinta-2);
+  white-space: pre;
+}
+.arbol b { color: var(--tinta); font-weight: 600; }
+.arbol i { color: var(--magenta); font-style: normal; }
+
+.ficha {
+  border-left: 3px solid var(--violeta);
+  padding: 2px 0 2px 16px;
+  margin: 22px 0;
+  color: var(--tinta-2);
+  font-size: 15px;
+}
+.ficha b { color: var(--tinta); }
+
+code {
+  font-family: var(--mono);
+  font-size: .86em;
+  background: color-mix(in srgb, var(--violeta) 11%, transparent);
+  color: var(--violeta);
+  padding: 1.5px 5px;
+  border-radius: 5px;
+}
+
+footer {
+  margin-top: 54px;
+  padding-top: 18px;
+  border-top: 1px solid var(--linea);
+  font-size: 13.5px;
+  color: var(--tinta-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mandos button { transition: none; }
+}
+</style>
+
+<div class="envoltorio">
+  <header class="encabezado">
+    <span class="rotulo">Prototipo · Campus MarIA</span>
+    <h1>MarIA <em>articulada</em></h1>
+    <p class="bajada">El gif deja de ser un video: se corta en partes, se arma como muñeco de papel
+      y se mueve sola. Cada tanto un dedo cruza la pantalla y la señala; si lo tocás, se abre el
+      globo de chat y ella se achica abajo a la izquierda.</p>
+  </header>
+
+  <div class="mandos" id="mandos">
+    <button data-do="saludo">Que salude</button>
+    <button data-do="hablar">Que hable</button>
+    <button data-do="atencion">Que señale</button>
+    <button data-do="finger">Traer el dedo</button>
+    <button data-do="open">Abrir el globo</button>
+    <button data-do="close">Volver</button>
+    <button data-do="debug" aria-pressed="false">Ver los cortes</button>
+  </div>
+
+  <section>
+    <h2>Cómo se mueve</h2>
+    <div class="pasos">
+      <div class="paso">
+        <span class="n">01 · CORTAR</span>
+        <h3>Un frame, quince ventanas</h3>
+        <p>Se elige un frame del gif y cada parte se dibuja como una ventana a esa misma imagen.
+          No hay quince archivos: hay quince recortes.</p>
+      </div>
+      <div class="paso">
+        <span class="n">02 · ANIDAR</span>
+        <h3>La mano cuelga del antebrazo</h3>
+        <p>Cada parte vive adentro de la anterior, así hereda su giro. Mover el hombro arrastra
+          todo el brazo, como en un muñeco articulado.</p>
+      </div>
+      <div class="paso">
+        <span class="n">03 · ANIMAR</span>
+        <h3>Respira aunque no pase nada</h3>
+        <p>Encima de los gestos corre una capa suelta: respiración, balanceo, parpadeo, la mirada
+          que sigue al puntero y el pelo que llega tarde.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>El esqueleto</h2>
+    <p>Quince huesos con nombre. El del lado cercano va adelante del vestido; el del lado lejano,
+      atrás. Con todos los ángulos en cero el muñeco reconstruye el frame original pixel por pixel:
+      por eso las piezas siempre calzan.</p>
+    <div class="arbol"><b>cadera</b>
+├─ muslo_i ─ pierna_i ─ pie_i        <i>(lado lejano)</i>
+├─ muslo_d ─ pierna_d ─ pie_d        <i>(lado cercano)</i>
+└─ <b>torso</b>
+   ├─ brazo_i ─ antebrazo_i ─ mano_i
+   ├─ <b>cabeza</b> ─ pelo               <i>(pelo con inercia)</i>
+   └─ brazo_d ─ antebrazo_d ─ mano_d</div>
+    <div class="ficha">Cada hueso lleva su propio recorte: <b>cápsula</b> para brazos y piernas,
+      <b>trapecio</b> para el torso y el vuelo de la pollera, <b>caja redondeada</b> para la cabeza.
+      Sin eso, al girar el brazo se lleva puesto un pedazo de vestido.</div>
+  </section>
+
+  <section>
+    <h2>El dedo y el globo</h2>
+    <p>El dedo entra por la izquierda, cruza en arco y golpea dos veces al lado de MarIA, que se da
+      vuelta y lo señala. Se lo puede tocar, o simplemente pasarle cerca con el mouse: no hace falta
+      acertarle. Ahí el globo se abre y MarIA se va chiquita al rincón, con la colita del globo
+      apuntándole. Cerrando, vuelve a su lugar.</p>
+    <p>El globo es una cáscara: escucha <code>onSend</code> y ya está listo para colgarlo del chat
+      real del Campus.</p>
+  </section>
+
+  <section>
+    <h2>Con el gif real</h2>
+    <p>Esta MarIA es de mentira: la dibujé para poder probar el mecanismo. Con el gif verdadero el
+      recorrido es el mismo, y hay una herramienta para hacerlo: se suelta el gif, se elige el frame
+      que sirve de pose base, se arrastran las articulaciones sobre la imagen y se exporta el rig.
+      El GIF se decodifica en el navegador, sin subir nada a ningún lado.</p>
+    <div class="ficha">Para que quede idéntica al sitio necesito dos cosas: el <b>gif de MarIA</b>
+      y los <b>colores exactos de maria.ar</b>. Todo el estilo cuelga de variables CSS
+      (<code>--ma-accent</code>, <code>--ma-radius</code>, la tipografía), así que es cambiar tres
+      valores y listo.</div>
+  </section>
+
+  <footer>Prototipo para maria.ar / Campus MarIA · el muñeco, el dedo y el globo corren en esta
+    misma página, sin librerías.</footer>
+</div>
+
+<script>
+/* =========================================================================
+   MarIA Avatar — runtime del muñeco articulado
+   ------------------------------------------------------------------------
+   Idea: se toma UN frame del gif de MarIA, se lo corta en cajas (cabeza,
+   torso, brazos, antebrazos, manos, piernas...) y cada caja se dibuja como
+   una "ventana" al mismo frame (background-position negativo). Las cajas se
+   anidan en el DOM siguiendo el esqueleto, así cada hueso hereda la rotación
+   del padre y el conjunto se mueve como un muñeco de papel articulado.
+
+   Con todos los ángulos en 0 el muñeco reconstruye el frame original pixel a
+   pixel: por eso las piezas siempre calzan.
+
+   API:
+     const maria = MariaAvatar.mount({ rig, sheet, chat: {...} });
+     maria.open(); maria.close(); maria.play('saludo'); maria.say('hola');
+   ========================================================================= */
+
+(function (global) {
+  'use strict';
+
+  var RAD = Math.PI / 180;
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function el(tag, cls, parent) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function reducedMotion() {
+    return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /* Un recorte puede venir como string CSS (`inset`, `ellipse`, `polygon`,
+     `path`) o como cápsula: { capsule: [ax, ay, bx, by, r] } en coordenadas
+     del dibujo original. La cápsula es el recorte natural de un brazo o una
+     pierna: sigue el miembro y deja afuera lo que el vecino haya metido
+     dentro de la caja (una pollera acampanada, por ejemplo). */
+  function capsulePath(ax, ay, bx, by, r) {
+    var dx = bx - ax, dy = by - ay;
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var px = -dy / len * r, py = dx / len * r;
+    var n = function (v) { return Math.round(v * 100) / 100; };
+    return 'path("M' + n(ax + px) + ' ' + n(ay + py) +
+           ' L' + n(bx + px) + ' ' + n(by + py) +
+           ' A' + n(r) + ' ' + n(r) + ' 0 0 0 ' + n(bx - px) + ' ' + n(by - py) +
+           ' L' + n(ax - px) + ' ' + n(ay - py) +
+           ' A' + n(r) + ' ' + n(r) + ' 0 0 0 ' + n(ax + px) + ' ' + n(ay + py) + ' Z")';
+  }
+
+  function resolveClip(clip, box) {
+    if (typeof clip === 'string') return clip;
+    if (clip && clip.capsule) {
+      var c = clip.capsule;
+      return capsulePath(c[0] - box[0], c[1] - box[1], c[2] - box[0], c[3] - box[1], c[4]);
+    }
+    return '';
+  }
+
+  /* ======================================================================
+     1. RIG — arma el muñeco en el DOM y le aplica poses
+     ====================================================================== */
+
+  function Rig(def, sheetUrl) {
+    this.def = def;
+    this.sheet = sheetUrl || def.sheet;
+    this.bones = {};          // id -> { def, el, parent, children[] }
+    this.order = [];          // ids en orden padre -> hijo
+    this.overlays = [];
+    this.pose = {};           // id -> { r, x, y, sx, sy }
+    this.el = el('div', 'ma-stage');
+    this._build();
+  }
+
+  Rig.prototype._build = function () {
+    var def = this.def, self = this;
+    this.el.style.width = def.stage.w + 'px';
+    this.el.style.height = def.stage.h + 'px';
+
+    var byId = {};
+    def.bones.forEach(function (b) { byId[b.id] = b; });
+
+    // orden topológico: un hueso no se crea antes que su padre
+    var pending = def.bones.slice(), guard = 0;
+    while (pending.length && guard++ < 500) {
+      var next = [];
+      pending.forEach(function (b) {
+        if (b.parent && !self.bones[b.parent]) { next.push(b); return; }
+        self._makeBone(b, byId);
+      });
+      if (next.length === pending.length) break;   // ciclo o padre inexistente
+      pending = next;
+    }
+
+    (def.overlays || []).forEach(function (o) { self._makeOverlay(o); });
+
+    if (def.shadow) {
+      var sh = el('div', 'ma-shadow', this.el);
+      sh.style.width = def.shadow.w + 'px';
+      sh.style.height = def.shadow.h + 'px';
+      sh.style.top = def.shadow.y + 'px';
+      sh.style.left = (def.shadow.x != null ? def.shadow.x + 'px' : '50%');
+      this.shadowEl = sh;
+    }
+  };
+
+  Rig.prototype._makeBone = function (b, byId) {
+    var parent = b.parent ? this.bones[b.parent] : null;
+    var box = b.box;                                  // [x, y, w, h] en el sheet
+    var pivot = b.pivot || [box[0] + box[2] / 2, box[1] + box[3] / 2];  // punto absoluto de la articulación
+    var node = el('div', 'ma-bone');
+    node.dataset.bone = b.id;
+    node.style.width = box[2] + 'px';
+    node.style.height = box[3] + 'px';
+    // el pivote es un punto del dibujo original: local = absoluto - origen de la caja
+    node.style.transformOrigin = (pivot[0] - box[0]) + 'px ' + (pivot[1] - box[1]) + 'px';
+    // posición relativa al padre: la diferencia entre los orígenes de las cajas
+    var px = parent ? box[0] - parent.def.box[0] : box[0];
+    var py = parent ? box[1] - parent.def.box[1] : box[1];
+    node.style.left = px + 'px';
+    node.style.top = py + 'px';
+    if (b.z != null) node.style.zIndex = b.z;
+
+    // Un hueso puede no tener dibujo (hueso "vacío" que solo sirve de pivote,
+    // como la cadera) o llevar un recorte para que no arrastre pixeles del
+    // vecino: `clip` (clip-path) o `radius` (border-radius).
+    var art = null;
+    if (b.art !== false) {
+      art = el('div', 'ma-art', node);
+      art.style.backgroundImage = 'url("' + this.sheet + '")';
+      art.style.backgroundPosition = (-box[0]) + 'px ' + (-box[1]) + 'px';
+      art.style.backgroundSize = this.def.stage.w + 'px ' + this.def.stage.h + 'px';
+      if (b.clip) art.style.clipPath = resolveClip(b.clip, box);
+      if (b.radius) art.style.borderRadius = b.radius;
+      if (this.def.pixelated) art.style.imageRendering = 'pixelated';
+    }
+
+    (parent ? parent.el : this.el).appendChild(node);
+
+    var rec = { def: b, el: node, art: art, parent: parent, children: [], rest: b.rest || 0, follow: b.follow || 0, vel: 0, prev: 0 };
+    if (parent) parent.children.push(rec);
+    this.bones[b.id] = rec;
+    this.order.push(b.id);
+    this.pose[b.id] = { r: 0, x: 0, y: 0, sx: 1, sy: 1 };
+  };
+
+  Rig.prototype._makeOverlay = function (o) {
+    var host = this.bones[o.bone];
+    if (!host) return;
+    var node = el('div', 'ma-overlay', host.el);
+    node.dataset.role = o.role || 'deco';
+    node.style.left = (o.x - host.def.box[0]) + 'px';
+    node.style.top = (o.y - host.def.box[1]) + 'px';
+    node.style.width = o.w + 'px';
+    node.style.height = o.h + 'px';
+    node.style.background = o.color || 'currentColor';
+    node.style.borderRadius = o.shape === 'rect' ? (o.radius || 2) + 'px' : '50%';
+    if (o.rotate) node.style.rotate = o.rotate + 'deg';
+    node.style.transformOrigin = o.role === 'lid' ? '50% 0%' : '50% 50%';
+    node.style.transform = 'scaleY(' + (o.role === 'lid' ? 0 : (o.role === 'mouth' ? 0.18 : 1)) + ')';
+    this.overlays.push({ def: o, el: node });
+  };
+
+  Rig.prototype.get = function (id) { return this.bones[id]; };
+
+  Rig.prototype.apply = function (pose) {
+    for (var id in this.bones) {
+      if (!Object.prototype.hasOwnProperty.call(this.bones, id)) continue;
+      var b = this.bones[id];
+      var p = pose[id];
+      if (!p) { b.el.style.transform = ''; continue; }
+      var t = '';
+      if (p.x || p.y) t += 'translate(' + (p.x || 0).toFixed(2) + 'px,' + (p.y || 0).toFixed(2) + 'px)';
+      if (p.r) t += ' rotate(' + p.r.toFixed(2) + 'deg)';
+      if ((p.sx != null && p.sx !== 1) || (p.sy != null && p.sy !== 1)) {
+        t += ' scale(' + (p.sx == null ? 1 : p.sx).toFixed(3) + ',' + (p.sy == null ? 1 : p.sy).toFixed(3) + ')';
+      }
+      b.el.style.transform = t;
+    }
+  };
+
+  Rig.prototype.setOverlay = function (role, value) {
+    this.overlays.forEach(function (o) {
+      if (o.def.role !== role) return;
+      o.el.style.transform = 'scaleY(' + value.toFixed(3) + ')';
+    });
+  };
+
+  /* ======================================================================
+     2. CLIPS — poses clave por hueso, en grados
+     Los ids son los estándar del template del riggeador; los huesos que
+     falten se ignoran, así un rig incompleto igual anima.
+     ====================================================================== */
+
+  var CLIPS = {
+    idle: { dur: 4200, loop: true, tracks: {} },
+
+    saludo: {
+      dur: 2600, loop: false, next: 'idle',
+      tracks: {
+        brazo_d:     [[0, 0], [.22, -108], [.85, -112], [1, 0]],
+        antebrazo_d: [[0, 0], [.22, -34], [.38, -6], [.52, -40], [.66, -6], [.8, -38], [.9, -20], [1, 0]],
+        mano_d:      [[0, 0], [.25, 14], [.4, -12], [.55, 14], [.7, -12], [.85, 8], [1, 0]],
+        cabeza:      [[0, 0], [.3, -5], [.8, -4], [1, 0]],
+        torso:       [[0, 0], [.3, -2.5], [.85, -2], [1, 0]],
+        brazo_i:     [[0, 0], [.3, 8], [.85, 7], [1, 0]]
+      }
+    },
+
+    hablar: {
+      dur: 2000, loop: true,
+      tracks: {
+        cabeza:      [[0, 0], [.25, -3.5], [.5, 1], [.75, -2.5], [1, 0]],
+        torso:       [[0, 0], [.5, 1.4], [1, 0]],
+        brazo_d:     [[0, -16], [.3, -34], [.55, -22], [.8, -38], [1, -16]],
+        antebrazo_d: [[0, -46], [.3, -62], [.55, -40], [.8, -58], [1, -46]],
+        mano_d:      [[0, 10], [.35, -14], [.7, 12], [1, 10]],
+        brazo_i:     [[0, 6], [.5, 12], [1, 6]],
+        antebrazo_i: [[0, -8], [.5, -18], [1, -8]]
+      }
+    },
+
+    atencion: {   // se da vuelta y mira/señala al dedo que cruza la pantalla
+      dur: 1400, loop: false, next: 'idle',
+      tracks: {
+        cabeza:      [[0, 0], [.3, -8], [.85, -7], [1, 0]],
+        torso:       [[0, 0], [.35, -4], [.85, -3], [1, 0]],
+        brazo_d:     [[0, 0], [.35, -68], [.85, -64], [1, 0]],
+        antebrazo_d: [[0, 0], [.35, -26], [.85, -22], [1, 0]],
+        mano_d:      [[0, 0], [.4, 16], [.85, 14], [1, 0]],
+        cadera:      [[0, 0], [.4, 2], [1, 0]]
+      }
+    },
+
+    dock: {       // se acomoda cuando se achica y se va abajo a la izquierda
+      dur: 900, loop: false, next: 'idle',
+      tracks: {
+        cadera:      [[0, 0], [.4, 3], [1, 0]],
+        torso:       [[0, 0], [.4, -3], [1, 0]],
+        cabeza:      [[0, 0], [.35, 6], [.7, -3], [1, 0]],
+        brazo_d:     [[0, 0], [.5, -18], [1, 0]],
+        brazo_i:     [[0, 0], [.5, 14], [1, 0]]
+      }
+    }
+  };
+
+  function sampleTrack(keys, t) {
+    if (!keys.length) return 0;
+    if (t <= keys[0][0]) return keys[0][1];
+    for (var i = 1; i < keys.length; i++) {
+      if (t <= keys[i][0]) {
+        var a = keys[i - 1], b = keys[i];
+        var span = b[0] - a[0] || 1;
+        return lerp(a[1], b[1], easeInOut((t - a[0]) / span));
+      }
+    }
+    return keys[keys.length - 1][1];
+  }
+
+  /* ======================================================================
+     3. ANIMATOR — mezcla clip + capa procedural (respiración, balanceo,
+     mirada, parpadeo, boca) y la inercia del pelo/manos
+     ====================================================================== */
+
+  function Animator(rig, opts) {
+    this.rig = rig;
+    this.opts = opts || {};
+    this.t0 = performance.now();
+    this.current = null;
+    this.previous = null;
+    this.blendUntil = 0;
+    this.blendDur = 260;
+    this.look = { x: 0, y: 0, tx: 0, ty: 0 };
+    this.talk = 0;
+    this.blink = { next: this.t0 + 1600, closed: 0, phase: 0 };
+    this.energy = 1;
+    this.running = false;
+    this._frame = this._frame.bind(this);
+    this.play('idle');
+  }
+
+  Animator.prototype.play = function (name, opts) {
+    var clip = CLIPS[name];
+    if (!clip) return;
+    opts = opts || {};
+    if (this.current && this.current.name === name && clip.loop) return;
+    this.previous = this.current;
+    this.blendUntil = performance.now() + (opts.blend == null ? this.blendDur : opts.blend);
+    this.current = { name: name, clip: clip, start: performance.now(), speed: opts.speed || 1 };
+  };
+
+  Animator.prototype.start = function () {
+    if (this.running) return;
+    this.running = true;
+    this.t0 = performance.now();
+    requestAnimationFrame(this._frame);
+  };
+  Animator.prototype.stop = function () { this.running = false; };
+
+  Animator.prototype.lookAt = function (clientX, clientY, figureRect) {
+    if (!figureRect) return;
+    var cx = figureRect.left + figureRect.width * 0.5;
+    var cy = figureRect.top + figureRect.height * 0.28;   // altura de la cabeza
+    this.look.tx = clamp((clientX - cx) / Math.max(240, figureRect.width * 1.6), -1, 1);
+    this.look.ty = clamp((clientY - cy) / Math.max(280, figureRect.height), -1, 1);
+  };
+
+  Animator.prototype._sampleClip = function (entry, now) {
+    var pose = {};
+    if (!entry) return pose;
+    var clip = entry.clip;
+    var elapsed = (now - entry.start) * entry.speed;
+    var t = clip.loop ? (elapsed % clip.dur) / clip.dur : clamp(elapsed / clip.dur, 0, 1);
+    if (!clip.loop && elapsed >= clip.dur && clip.next && entry === this.current) {
+      this.play(clip.next, { blend: 320 });
+    }
+    for (var id in clip.tracks) {
+      if (Object.prototype.hasOwnProperty.call(clip.tracks, id)) {
+        pose[id] = sampleTrack(clip.tracks[id], t);
+      }
+    }
+    return pose;
+  };
+
+  Animator.prototype._frame = function (now) {
+    if (!this.running) return;
+    this.update(now);
+    requestAnimationFrame(this._frame);
+  };
+
+  Animator.prototype.update = function (now) {
+    var rig = this.rig, T = (now - this.t0) / 1000;
+    var base = this._sampleClip(this.current, now);
+
+    // crossfade con el clip anterior para que no salte
+    if (this.previous && now < this.blendUntil) {
+      var k = 1 - (this.blendUntil - now) / this.blendDur;
+      var prev = this._sampleClip(this.previous, now);
+      for (var id in prev) {
+        if (Object.prototype.hasOwnProperty.call(prev, id)) {
+          base[id] = lerp(prev[id], base[id] || 0, easeInOut(clamp(k, 0, 1)));
+        }
+      }
+    } else if (now >= this.blendUntil) {
+      this.previous = null;
+    }
+
+    // ---- capa procedural: lo que hace que "respire" aunque no pase nada ----
+    var e = this.energy;
+    var breath = Math.sin(T * 1.25) * e;
+    var sway = Math.sin(T * 0.55) * e;
+    var sway2 = Math.sin(T * 0.55 + 1.1) * e;
+    var micro = Math.sin(T * 2.7) * Math.sin(T * 0.9) * e;
+
+    this.look.x = lerp(this.look.x, this.look.tx, 0.06);
+    this.look.y = lerp(this.look.y, this.look.ty, 0.06);
+
+    var add = {
+      cadera:      { r: sway * 1.5, y: Math.abs(breath) * 0.7 },
+      torso:       { r: sway * -1.1 + micro * 0.5, sy: 1 + breath * 0.014, sx: 1 - breath * 0.008 },
+      cabeza:      { r: sway2 * -1.8 + this.look.x * 7 + micro * 0.6, x: this.look.x * 3, y: -breath * 0.9 + this.look.y * 2 },
+      pelo:        { r: sway2 * -2.6 },
+      brazo_i:     { r: sway * 3.2 },
+      antebrazo_i: { r: sway * 2.4 },
+      brazo_d:     { r: sway * -3.2 },
+      antebrazo_d: { r: sway * -2.4 },
+      muslo_i:     { r: sway * -0.7 },
+      muslo_d:     { r: sway * 0.7 }
+    };
+
+    // ---- boca y parpadeo ----
+    if (this.talk > 0) {
+      var m = 0.2 + Math.abs(Math.sin(T * 9.3) * 0.5 + Math.sin(T * 14.7) * 0.3) * 0.8;
+      rig.setOverlay('mouth', clamp(m, 0.15, 1));
+      add.cabeza.r += Math.sin(T * 6.1) * 0.7;
+    } else {
+      rig.setOverlay('mouth', 0.18);
+    }
+
+    if (now > this.blink.next) {
+      this.blink.phase = 1;
+      this.blink.next = now + 2200 + Math.random() * 3800;
+    }
+    if (this.blink.phase > 0) {
+      this.blink.phase -= 0.11;
+      var k2 = this.blink.phase;
+      rig.setOverlay('lid', clamp(Math.sin(clamp(k2, 0, 1) * Math.PI) * 1.35, 0, 1));
+      if (this.blink.phase <= 0) rig.setOverlay('lid', 0);
+    }
+
+    // ---- composición final + inercia (el pelo y las manos llegan tarde) ----
+    var pose = rig.pose;
+    for (var bid in rig.bones) {
+      if (!Object.prototype.hasOwnProperty.call(rig.bones, bid)) continue;
+      var bone = rig.bones[bid];
+      var a = add[bid] || {};
+      var target = (base[bid] || 0) + (a.r || 0) + bone.rest;
+      var p = pose[bid];
+
+      if (bone.follow) {
+        // segunda acción: se persigue al objetivo con retardo
+        bone.vel = bone.vel * 0.82 + (target - p.r) * (0.34 - bone.follow * 0.22);
+        p.r += bone.vel;
+      } else {
+        p.r = target;
+      }
+      p.x = a.x || 0;
+      p.y = a.y || 0;
+      p.sx = a.sx == null ? 1 : a.sx;
+      p.sy = a.sy == null ? 1 : a.sy;
+    }
+    rig.apply(pose);
+  };
+
+  /* ======================================================================
+     4. EL DEDO que cruza la pantalla
+     ====================================================================== */
+
+  var FINGER_SVG =
+    '<svg viewBox="0 0 74 96" aria-hidden="true">' +
+    '<circle class="ma-tap-ring" cx="26" cy="14" r="12" fill="none" stroke="var(--ma-accent)" stroke-width="2.5"/>' +
+    '<g filter="url(#ma-fsh)">' +
+    '<path d="M26 8c-4.4 0-8 3.6-8 8v29l-5.6-5.2c-2.6-2.4-6.6-2.3-9 .3-2.2 2.4-2.3 6-.3 8.6l14 18.4c3.5 4.6 9 7.3 14.8 7.3h9.4c9.4 0 17-7.6 17-17V37c0-3.6-2.9-6.5-6.5-6.5-1.3 0-2.5.4-3.5 1a6.5 6.5 0 0 0-9.9-4 6.5 6.5 0 0 0-9.9-3.6V16c0-4.4-3.6-8-8-8Z" fill="#f7cfae" stroke="#2b2233" stroke-width="2.6" stroke-linejoin="round"/>' +
+    '<path d="M34 74v-9M44 74v-9M54 74v-9" stroke="#2b2233" stroke-width="2.2" stroke-linecap="round" opacity=".45"/>' +
+    '</g>' +
+    '<defs><filter id="ma-fsh" x="-40%" y="-30%" width="200%" height="180%">' +
+    '<feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#17122a" flood-opacity=".26"/>' +
+    '</filter></defs></svg>';
+
+  function Finger(host, opts) {
+    this.opts = opts;
+    this.btn = el('button', 'ma-finger', host);
+    this.btn.type = 'button';
+    this.btn.setAttribute('aria-label', opts.label || 'Tocá para hablar con MarIA');
+    this.btn.innerHTML = FINGER_SVG;
+    this.trail = [];
+    for (var i = 0; i < 5; i++) {
+      var d = el('div', 'ma-finger-trail', host);
+      d.style.opacity = '0';
+      this.trail.push({ el: d, x: 0, y: 0 });
+    }
+    this.state = 'wait';
+    this.until = performance.now() + (opts.firstDelay || 2600);
+    this.pos = { x: -200, y: -200 };
+    this.visible = false;
+  }
+
+  Finger.prototype.setVisible = function (v) {
+    if (this.visible === v) return;
+    this.visible = v;
+    this.btn.dataset.visible = v ? '1' : '0';
+    if (!v) this.trail.forEach(function (t) { t.el.style.opacity = '0'; });
+  };
+
+  Finger.prototype.hide = function () { this.setVisible(false); this.state = 'off'; };
+  Finger.prototype.resume = function (delay) {
+    this.state = 'wait';
+    this.until = performance.now() + (delay || 9000);
+  };
+
+  // recorrido: entra por la izquierda, cruza en arco y va a "tocar" a MarIA
+  Finger.prototype.update = function (now, targetPt) {
+    if (this.state === 'off') return;
+    var vw = global.innerWidth, vh = global.innerHeight;
+
+    if (this.state === 'wait') {
+      if (now < this.until) return;
+      this.state = 'travel';
+      this.start = now;
+      this.dur = this.opts.travelMs || 5200;
+      this.from = { x: -80, y: vh * (0.42 + Math.random() * 0.22) };
+      this.to = targetPt;
+      this.ctrl = { x: vw * 0.42, y: Math.min(this.from.y, this.to.y) - vh * 0.16 };
+      this.setVisible(true);
+      return;
+    }
+
+    if (this.state === 'travel') {
+      var p = clamp((now - this.start) / this.dur, 0, 1);
+      var e = easeInOut(p);
+      var q = 1 - e;
+      // bezier cuadrática: entrada, arco, llegada
+      var x = q * q * this.from.x + 2 * q * e * this.ctrl.x + e * e * this.to.x;
+      var y = q * q * this.from.y + 2 * q * e * this.ctrl.y + e * e * this.to.y;
+      y += Math.sin(now / 420) * 6 * (1 - e);            // flota
+      var tilt = -14 + Math.sin(now / 520) * 5 + e * 12;
+      var scale = 0.86 + e * 0.18;
+      this.pos.x = x; this.pos.y = y;
+      this.btn.style.transform = 'translate(' + (x - 18) + 'px,' + (y - 12) + 'px) rotate(' + tilt + 'deg) scale(' + scale + ')';
+      this._trail(x, y, e);
+      if (p >= 1) { this.state = 'tap'; this.start = now; this.taps = 0; }
+      return;
+    }
+
+    if (this.state === 'tap') {
+      var k = (now - this.start) / 760;
+      var i = Math.floor(k);
+      if (i > this.taps && i < 3) {
+        this.taps = i;
+        this.btn.dataset.tapping = '1';
+        var self = this;
+        setTimeout(function () { self.btn.dataset.tapping = '0'; }, 620);
+        if (this.opts.onTap) this.opts.onTap();
+      }
+      var bob = Math.sin(k * Math.PI * 2) * 7;
+      this.pos.y = this.to.y + bob;
+      this.btn.style.transform = 'translate(' + (this.to.x - 18) + 'px,' + (this.to.y - 12 + bob) + 'px) rotate(-2deg) scale(1.04)';
+      if (k > 3) { this.state = 'leave'; this.start = now; }
+      return;
+    }
+
+    if (this.state === 'leave') {
+      var p2 = clamp((now - this.start) / 900, 0, 1);
+      this.btn.style.transform = 'translate(' + (this.to.x - 18) + 'px,' + (this.to.y - 12 + p2 * 40) + 'px) rotate(6deg) scale(' + (1 - p2 * 0.25) + ')';
+      this.btn.style.opacity = String(1 - p2);
+      if (p2 >= 1) {
+        this.btn.style.opacity = '';
+        this.setVisible(false);
+        this.resume(this.opts.interval || 12000);
+      }
+    }
+  };
+
+  Finger.prototype._trail = function (x, y, e) {
+    for (var i = this.trail.length - 1; i > 0; i--) {
+      this.trail[i].x = this.trail[i - 1].x;
+      this.trail[i].y = this.trail[i - 1].y;
+    }
+    this.trail[0].x = x; this.trail[0].y = y;
+    for (var j = 0; j < this.trail.length; j++) {
+      var t = this.trail[j];
+      var s = (1 - j / this.trail.length);
+      t.el.style.transform = 'translate(' + (t.x - 5) + 'px,' + (t.y - 5) + 'px) scale(' + s + ')';
+      t.el.style.opacity = String(0.14 * s * (1 - e * 0.4));
+    }
+  };
+
+  Finger.prototype.near = function (x, y, r) {
+    if (!this.visible) return false;
+    var dx = x - this.pos.x, dy = y - this.pos.y;
+    return dx * dx + dy * dy < r * r;
+  };
+
+  /* ======================================================================
+     5. CHAT — el globo estilo maria.ar
+     ====================================================================== */
+
+  var SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12 4 4l6 8-6 8 16-8Z" fill="currentColor"/></svg>';
+
+  function Chat(host, opts, ctrl) {
+    this.opts = opts || {};
+    this.ctrl = ctrl;
+    var root = el('div', 'ma-chat', host);
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-label', 'Chat con MarIA');
+    root.setAttribute('aria-modal', 'false');
+    this.el = root;
+
+    var head = el('div', 'ma-chat-head', root);
+    var av = el('div', 'ma-chat-avatar', head);
+    if (this.opts.avatar) av.style.backgroundImage = 'url("' + this.opts.avatar + '")';
+    var meta = el('div', '', head);
+    el('div', 'ma-chat-title', meta).textContent = this.opts.name || 'MarIA';
+    var st = el('div', 'ma-chat-status', meta);
+    el('i', '', st);
+    st.appendChild(document.createTextNode(this.opts.status || 'en línea'));
+    var close = el('button', 'ma-chat-close', head);
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Cerrar chat');
+    close.innerHTML = '&times;';
+    close.addEventListener('click', function () { ctrl.close(); });
+
+    this.body = el('div', 'ma-chat-body', root);
+    this.quick = el('div', 'ma-quick', root);
+
+    var form = el('form', 'ma-chat-form', root);
+    this.input = el('input', '', form);
+    this.input.type = 'text';
+    this.input.placeholder = this.opts.placeholder || 'Escribile a MarIA…';
+    this.input.setAttribute('aria-label', 'Mensaje para MarIA');
+    var send = el('button', '', form);
+    send.type = 'submit';
+    send.setAttribute('aria-label', 'Enviar');
+    send.innerHTML = SEND_SVG;
+    var self = this;
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var v = self.input.value.trim();
+      if (!v) return;
+      self.input.value = '';
+      self.send(v);
+    });
+    this.greeted = false;
+  }
+
+  Chat.prototype.push = function (from, text) {
+    var m = el('div', 'ma-msg', this.body);
+    m.dataset.from = from;
+    m.textContent = text;
+    this.body.scrollTop = this.body.scrollHeight;
+    return m;
+  };
+
+  Chat.prototype.typing = function (on) {
+    if (on) {
+      if (this._typing) return;
+      this._typing = el('div', 'ma-msg ma-typing', this.body);
+      this._typing.dataset.from = 'maria';
+      this._typing.innerHTML = '<span></span><span></span><span></span>';
+      this.body.scrollTop = this.body.scrollHeight;
+    } else if (this._typing) {
+      this._typing.remove();
+      this._typing = null;
+    }
+  };
+
+  Chat.prototype.setQuick = function (list) {
+    var self = this;
+    this.quick.innerHTML = '';
+    (list || []).forEach(function (q) {
+      var b = el('button', '', self.quick);
+      b.type = 'button';
+      b.textContent = q;
+      b.addEventListener('click', function () { self.send(q); });
+    });
+  };
+
+  Chat.prototype.reply = function (text, opts) {
+    this.typing(false);
+    this.push('maria', text);
+    this.ctrl.talkFor(Math.min(6000, 900 + text.length * 42));
+    if (opts && opts.quick) this.setQuick(opts.quick);
+  };
+
+  Chat.prototype.send = function (text) {
+    this.push('user', text);
+    this.setQuick([]);
+    var api = {
+      typing: this.typing.bind(this),
+      reply: this.reply.bind(this),
+      quick: this.setQuick.bind(this)
+    };
+    this.el.dispatchEvent(new CustomEvent('maria:send', { bubbles: true, detail: { text: text, api: api } }));
+    if (this.opts.onSend) { this.opts.onSend(text, api); return; }
+    this.demoAnswer(text, api);
+  };
+
+  // Respuestas de demo: se reemplazan pasando chat.onSend
+  Chat.prototype.demoAnswer = function (text, api) {
+    var t = text.toLowerCase();
+    var a;
+    if (/geo|generative|ia|chatgpt|gemini/.test(t)) {
+      a = 'GEO es optimizar para que te citen los modelos, no solo para rankear. En el Campus tenemos un hilo con el checklist completo.';
+    } else if (/seo|posicion|google|serp/.test(t)) {
+      a = 'Contame qué sitio es y te digo por dónde empezaría: casi siempre es contenido + intención de búsqueda antes que tecnicismos.';
+    } else if (/foro|campus|comunidad|sumar|entrar/.test(t)) {
+      a = 'El Campus es gratis y abierto: entrás, te presentás en el hilo de bienvenida y ya podés preguntar.';
+    } else if (/hola|buenas|hey|qué tal|que tal/.test(t)) {
+      a = '¡Hola! Soy MarIA. Preguntame de SEO, GEO o de la comunidad.';
+    } else {
+      a = 'Buena pregunta. Esto es una demo del widget, así que engancho la respuesta real a tu backend con chat.onSend().';
+    }
+    api.typing(true);
+    setTimeout(function () {
+      api.reply(a, { quick: ['¿Qué es GEO?', 'Quiero entrar al Campus'] });
+    }, 700 + Math.random() * 700);
+  };
+
+  Chat.prototype.greet = function () {
+    if (this.greeted) return;
+    this.greeted = true;
+    var self = this;
+    this.typing(true);
+    setTimeout(function () {
+      self.reply(self.opts.greeting || '¡Hola! Soy MarIA 👋 ¿En qué andás? Preguntame de SEO, GEO o del Campus.',
+        { quick: self.opts.quickReplies || ['¿Qué es GEO?', '¿Cómo entro al Campus?', 'Ayuda con mi web'] });
+    }, 620);
+  };
+
+  /* ======================================================================
+     6. CONTROLLER
+     ====================================================================== */
+
+  function Avatar(opts) {
+    this.opts = Object.assign({
+      dockSize: 118,
+      heroHeight: 0.46,      // fracción del alto de la ventana
+      heroMax: 430,
+      gap: 16,
+      side: 'right',         // dónde vive en modo hero
+      finger: true,
+      brushRadius: 52,       // "roce": abre sin necesidad de click preciso
+      theme: null,
+      autoGreet: true
+    }, opts || {});
+
+    this.root = el('div', 'ma-root', document.body);
+    this.root.dataset.state = 'hero';
+    if (this.opts.theme) this.root.dataset.theme = this.opts.theme;
+    this.root.style.setProperty('--ma-dock-size', this.opts.dockSize + 'px');
+    this.root.style.setProperty('--ma-gap', this.opts.gap + 'px');
+    if (this.opts.accent) this.root.style.setProperty('--ma-accent', this.opts.accent);
+    if (this.opts.accent2) this.root.style.setProperty('--ma-accent-2', this.opts.accent2);
+
+    this.figure = el('div', 'ma-figure', this.root);
+    this.figure.tabIndex = 0;
+    this.figure.setAttribute('role', 'button');
+    this.figure.setAttribute('aria-label', 'Abrir el chat de MarIA');
+    el('div', 'ma-halo', this.figure);
+
+    this.rig = new Rig(this.opts.rig, this.opts.sheet);
+    this.figure.appendChild(this.rig.el);
+
+    this.anim = new Animator(this.rig, {});
+    this.chat = new Chat(this.root, this.opts.chat, this);
+    if (!(this.opts.chat && this.opts.chat.avatar)) this._avatarFromRig();
+    this.callout = el('div', 'ma-callout', this.root);
+    this.callout.addEventListener('click', this.open.bind(this));
+
+    if (this.opts.finger) {
+      var self = this;
+      this.finger = new Finger(this.root, Object.assign({
+        onTap: function () { self._nudge(); }
+      }, this.opts.fingerOpts || {}));
+      this.finger.btn.addEventListener('click', function () { self.open(); });
+    }
+
+    this.state = 'hero';
+    this.home = this.opts.target || null;
+    this.talkUntil = 0;
+    this._bind();
+    this.layout();
+    this.anim.start();
+    if (reducedMotion()) this.anim.energy = 0.25;
+    this._tick = this._tick.bind(this);
+    requestAnimationFrame(this._tick);
+  }
+
+  // El avatar del encabezado del chat es la cabeza del propio rig: no hace
+  // falta subir otra imagen.
+  Avatar.prototype._avatarFromRig = function () {
+    var head = this.rig.bones[this.opts.headBone || 'cabeza'];
+    if (!head) return;
+    var box = head.def.box, stage = this.rig.def.stage;
+    var size = 34, zoom = size / (box[2] * 0.94);
+    var cx = box[0] + box[2] / 2, cy = box[1] + box[3] * 0.42;
+    var av = this.chat.el.querySelector('.ma-chat-avatar');
+    av.style.backgroundImage = 'url("' + this.rig.sheet + '")';
+    av.style.backgroundSize = (stage.w * zoom) + 'px ' + (stage.h * zoom) + 'px';
+    av.style.backgroundPosition = (-(cx * zoom - size / 2)) + 'px ' + (-(cy * zoom - size / 2)) + 'px';
+  };
+
+  Avatar.prototype._bind = function () {
+    var self = this;
+    this.figure.addEventListener('click', function () { self.toggle(); });
+    this.figure.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); self.toggle(); }
+    });
+    global.addEventListener('resize', function () { self.layout(); });
+    // en captura: así también se entera de los scrolls de un contenedor
+    // interno (por ejemplo si el avatar vive dentro de un panel con scroll)
+    document.addEventListener('scroll', function () { if (self.home) self.layout(); },
+      { passive: true, capture: true });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && self.state === 'chat') self.close();
+    });
+    document.addEventListener('pointermove', function (ev) {
+      self.anim.lookAt(ev.clientX, ev.clientY, self.figure.getBoundingClientRect());
+      // "roza el dedo": no hace falta acertarle, alcanza con pasarle cerca
+      if (self.finger && self.state !== 'chat' && ev.pointerType === 'mouse' &&
+          self.finger.near(ev.clientX, ev.clientY, self.opts.brushRadius)) {
+        self.open();
+      }
+    }, { passive: true });
+  };
+
+  Avatar.prototype.layout = function () {
+    var stage = this.rig.def.stage;
+    var vw = global.innerWidth, vh = global.innerHeight;
+    var gap = this.opts.gap, x, y, s;
+
+    if (this.state === 'chat') {
+      s = this.opts.dockSize / stage.h;
+      x = gap;
+      y = vh - gap - stage.h * s;
+    } else if (this.home) {
+      var r = this.home.getBoundingClientRect();
+      s = Math.min(r.width / stage.w, r.height / stage.h);
+      x = r.left + (r.width - stage.w * s) / 2;
+      y = r.top + (r.height - stage.h * s) / 2;
+    } else {
+      // en un teléfono no puede taparle media pantalla al contenido
+      var frac = vw < 520 ? Math.min(this.opts.heroHeight, 0.30) : this.opts.heroHeight;
+      s = Math.min(vh * frac, vw < 520 ? Math.min(this.opts.heroMax, 300) : this.opts.heroMax) / stage.h;
+      s = Math.min(s, (vw - gap * 2) / stage.w);
+      x = this.opts.side === 'left' ? gap : vw - gap - stage.w * s;
+      y = vh - gap - stage.h * s;
+    }
+    this.figure.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+    this._rect = { x: x, y: y, s: s, w: stage.w * s, h: stage.h * s };
+    this._placeCallout();
+  };
+
+  Avatar.prototype._placeCallout = function () {
+    if (!this._rect) return;
+    var r = this._rect;
+    this.callout.style.left = clamp(r.x + r.w * 0.42, 10, global.innerWidth - 250) + 'px';
+    this.callout.style.top = Math.max(10, r.y - 16) + 'px';
+    this.callout.style.transform = this.callout.dataset.visible === '1' ? 'translateY(-100%)' : 'translateY(calc(-100% + 6px)) scale(.96)';
+  };
+
+  Avatar.prototype._tick = function (now) {
+    if (this.finger && this.state !== 'chat') {
+      var r = this._rect || { x: 0, y: 0, w: 0, h: 0 };
+      // el dedo apunta a la mano/hombro de MarIA
+      this.finger.update(now, { x: r.x + r.w * 0.34, y: r.y + r.h * 0.30 });
+    }
+    if (this.talkUntil && now > this.talkUntil) {
+      this.talkUntil = 0;
+      this.anim.talk = 0;
+      if (this.state === 'chat') this.anim.play('idle', { blend: 400 });
+    }
+    requestAnimationFrame(this._tick);
+  };
+
+  Avatar.prototype._nudge = function () {
+    // el dedo "toca" la pantalla: MarIA lo mira y lo señala
+    if (this.state === 'chat') return;
+    this.anim.play('atencion', { blend: 200 });
+    if (!this._nudged && this.opts.calloutOnNudge !== false) {
+      this._nudged = true;
+      this.say(this.opts.nudgeText || '¿Charlamos? Tocá acá 👆', 4200);
+    }
+  };
+
+  Avatar.prototype.say = function (text, ms) {
+    this.callout.textContent = text;
+    this.callout.dataset.visible = '1';
+    this._placeCallout();
+    this.talkFor(Math.min(5000, 800 + text.length * 40));
+    var self = this;
+    clearTimeout(this._sayTimer);
+    this._sayTimer = setTimeout(function () {
+      self.callout.dataset.visible = '0';
+      self._placeCallout();
+    }, ms || 4000);
+    return this;
+  };
+
+  Avatar.prototype.talkFor = function (ms) {
+    this.anim.talk = 1;
+    this.talkUntil = performance.now() + ms;
+    this.anim.play('hablar', { blend: 260 });
+  };
+
+  Avatar.prototype.play = function (name, opts) { this.anim.play(name, opts); return this; };
+
+  Avatar.prototype.open = function () {
+    if (this.state === 'chat') return this;
+    this.state = 'chat';
+    this.root.dataset.state = 'chat';
+    this.callout.dataset.visible = '0';
+    if (this.finger) this.finger.hide();
+    this.anim.play('dock', { blend: 200 });
+    this.layout();
+    var self = this;
+    setTimeout(function () {
+      if (self.opts.autoGreet) self.chat.greet();
+      if (!('ontouchstart' in global)) self.chat.input.focus();
+    }, 460);
+    this.root.dispatchEvent(new CustomEvent('maria:open', { bubbles: true }));
+    return this;
+  };
+
+  Avatar.prototype.close = function () {
+    if (this.state !== 'chat') return this;
+    this.state = 'hero';
+    this.root.dataset.state = 'hero';
+    this.layout();
+    this.anim.play('saludo', { blend: 200 });
+    if (this.finger) this.finger.resume(this.opts.fingerReturnMs || 16000);
+    this.root.dispatchEvent(new CustomEvent('maria:close', { bubbles: true }));
+    return this;
+  };
+
+  Avatar.prototype.toggle = function () { return this.state === 'chat' ? this.close() : this.open(); };
+
+  Avatar.prototype.setRig = function (def, sheet) {
+    var wasOpen = this.state === 'chat';
+    this.anim.stop();
+    this.rig.el.remove();
+    this.rig = new Rig(def, sheet);
+    this.figure.appendChild(this.rig.el);
+    this.anim = new Animator(this.rig, {});
+    this.anim.start();
+    this.layout();
+    if (wasOpen) this.open();
+    return this;
+  };
+
+  Avatar.prototype.destroy = function () {
+    this.anim.stop();
+    this.root.remove();
+  };
+
+  /* ====================================================================== */
+
+  var MariaAvatar = {
+    mount: function (opts) {
+      if (!opts || !opts.rig) throw new Error('MariaAvatar.mount necesita un rig');
+      return new Avatar(opts);
+    },
+    Rig: Rig,
+    clips: CLIPS
+  };
+
+  if (typeof module === 'object' && module.exports) module.exports = MariaAvatar;
+  global.MariaAvatar = MariaAvatar;
+
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+
+<script>
+(function () {
+  var RIG = {"name":"MarIA placeholder","sheet":"../art/maria-placeholder.svg","stage":{"w":320,"h":560},"shadow":{"x":162,"y":498,"w":156,"h":26},"bones":[{"id":"cadera","box":[128,296,64,40],"pivot":[160,312],"art":false},{"id":"muslo_i","parent":"cadera","z":0,"box":[126,322,40,96],"pivot":[148,316],"clip":{"capsule":[148,316,141,410,15]}},{"id":"pierna_i","parent":"muslo_i","box":[123,400,32,96],"pivot":[141,410],"clip":{"capsule":[141,410,137,488,12.5]}},{"id":"pie_i","parent":"pierna_i","box":[112,478,50,34],"pivot":[137,488],"clip":"inset(6px 2px 4px 4px round 12px)"},{"id":"muslo_d","parent":"cadera","z":1,"box":[158,322,42,98],"pivot":[175,316],"clip":{"capsule":[175,316,180,412,16]}},{"id":"pierna_d","parent":"muslo_d","box":[166,402,34,96],"pivot":[180,412],"clip":{"capsule":[180,412,183,490,13.5]}},{"id":"pie_d","parent":"pierna_d","box":[160,480,52,34],"pivot":[183,490],"clip":"inset(6px 3px 3px 3px round 12px)"},{"id":"torso","parent":"cadera","z":3,"box":[112,176,98,178],"pivot":[160,300],"clip":"polygon(36px 0px, 60px 0px, 60px 16px, 97px 14px, 97px 46px, 72px 54px, 68px 88px, 94px 164px, 84px 178px, 12px 178px, 2px 164px, 28px 88px, 24px 54px, 1px 46px, 1px 14px, 36px 16px)"},{"id":"brazo_i","parent":"torso","z":-1,"box":[94,222,44,84],"pivot":[126,214],"clip":{"capsule":[126,214,106,272,12]}},{"id":"antebrazo_i","parent":"brazo_i","box":[86,266,34,80],"pivot":[106,272],"clip":{"capsule":[106,272,98,330,10.5]}},{"id":"mano_i","parent":"antebrazo_i","box":[82,330,28,32],"pivot":[98,334],"clip":"ellipse(13px 15px at 14px 14px)","follow":0.45},{"id":"brazo_d","parent":"torso","z":1,"box":[184,222,46,84],"pivot":[196,214],"clip":{"capsule":[196,214,216,274,12]}},{"id":"antebrazo_d","parent":"brazo_d","box":[208,268,34,80],"pivot":[216,274],"clip":{"capsule":[216,274,224,332,10.5]}},{"id":"mano_d","parent":"antebrazo_d","box":[212,332,28,32],"pivot":[224,336],"clip":"ellipse(13px 15px at 14px 14px)","follow":0.45},{"id":"cabeza","parent":"torso","z":2,"box":[102,50,116,126],"pivot":[160,168],"clip":"ellipse(58px 64px at 58px 62px)"},{"id":"pelo","parent":"cabeza","z":-1,"box":[72,100,41,94],"pivot":[110,114],"follow":0.62}],"overlays":[{"bone":"cabeza","role":"lid","x":139,"y":114,"w":16,"h":18,"shape":"rect","radius":5,"color":"#f7cfae"},{"bone":"cabeza","role":"lid","x":167,"y":114,"w":16,"h":18,"shape":"rect","radius":5,"color":"#f7cfae"},{"bone":"cabeza","role":"mouth","x":150,"y":141,"w":20,"h":15,"color":"#7d3b4c"}]};
+  var SHEET = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20320%20560%22%20width%3D%22320%22%20height%3D%22560%22%3E%20%3C!--%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20MarIA%20de%20referencia%20(placeholder).%20Se%20dibuja%20como%20se%20dibujar%C3%ADa%20un%20frame%20del%20gif%3A%20las%20piezas%20que%20despu%C3%A9s%20se%20recortan%20(brazos%2C%20piernas%2C%20cabeza)%20est%C3%A1n%20separadas%20del%20cuerpo%20y%20las%20mangas%20del%20vestido%20tapan%20la%20articulaci%C3%B3n%20del%20hombro.%20El%20orden%20de%20dibujo%20es%20el%20mismo%20que%20el%20z-index%20del%20rig.%20Reemplazable%20por%20el%20frame%20real%3A%20ver%20rigs%2Fmaria-placeholder.rig.json%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20--%3E%20%3Cdefs%3E%20%3ClinearGradient%20id%3D%22ma-dress%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%238b5cf6%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f0409f%22%2F%3E%20%3C%2FlinearGradient%3E%20%3ClinearGradient%20id%3D%22ma-dress-2%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%239b6ef8%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c752c8%22%2F%3E%20%3C%2FlinearGradient%3E%20%3C%2Fdefs%3E%20%3C!--%201.%20cola%20de%20pelo%20(detr%C3%A1s%20de%20todo)%20--%3E%20%3Cpath%20d%3D%22M110%20106%20C%2084%20120%2076%20152%2084%20176%20C%2090%20190%20106%20192%20111%20182%20C%20100%20160%20104%20130%20118%20116%20Z%22%20fill%3D%22%232b2233%22%2F%3E%20%3C!--%202.%20pierna%20lejana%20--%3E%20%3Cpath%20d%3D%22M148%20316%20L141%20410%22%20stroke%3D%22%23e0ab86%22%20stroke-width%3D%2230%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cpath%20d%3D%22M141%20410%20L137%20488%22%20stroke%3D%22%23e0ab86%22%20stroke-width%3D%2225%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Crect%20x%3D%22116%22%20y%3D%22484%22%20width%3D%2244%22%20height%3D%2224%22%20rx%3D%2210%22%20fill%3D%22%233b2f4a%22%2F%3E%20%3C!--%203.%20pierna%20cercana%20--%3E%20%3Cpath%20d%3D%22M175%20316%20L180%20412%22%20stroke%3D%22%23f7cfae%22%20stroke-width%3D%2232%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cpath%20d%3D%22M180%20412%20L183%20490%22%20stroke%3D%22%23f7cfae%22%20stroke-width%3D%2227%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Crect%20x%3D%22163%22%20y%3D%22486%22%20width%3D%2246%22%20height%3D%2225%22%20rx%3D%2210%22%20fill%3D%22%232b2233%22%2F%3E%20%3C!--%204.%20brazo%20lejano%20--%3E%20%3Cpath%20d%3D%22M126%20214%20L106%20272%22%20stroke%3D%22%23e0ab86%22%20stroke-width%3D%2224%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cpath%20d%3D%22M106%20272%20L98%20330%22%20stroke%3D%22%23e0ab86%22%20stroke-width%3D%2221%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cellipse%20cx%3D%2296%22%20cy%3D%22344%22%20rx%3D%2213%22%20ry%3D%2215%22%20fill%3D%22%23e0ab86%22%2F%3E%20%3C!--%205.%20cuello%20--%3E%20%3Crect%20x%3D%22149%22%20y%3D%22150%22%20width%3D%2222%22%20height%3D%2256%22%20rx%3D%2211%22%20fill%3D%22%23e5b590%22%2F%3E%20%3C!--%206.%20vestido%20%2B%20mangas%20(tapan%20el%20hombro%20para%20esconder%20la%20junta)%20--%3E%20%3Cpath%20d%3D%22M137%20196%20C%20140%20240%20141%20250%20141%20264%20L%20116%20336%20C%20132%20350%20188%20350%20204%20336%20L%20179%20264%20C%20179%20250%20180%20240%20183%20196%20Z%22%20fill%3D%22url(%23ma-dress)%22%2F%3E%20%3Cellipse%20cx%3D%22134%22%20cy%3D%22206%22%20rx%3D%2221%22%20ry%3D%2215%22%20fill%3D%22url(%23ma-dress-2)%22%2F%3E%20%3Cellipse%20cx%3D%22188%22%20cy%3D%22206%22%20rx%3D%2221%22%20ry%3D%2215%22%20fill%3D%22url(%23ma-dress-2)%22%2F%3E%20%3Cpath%20d%3D%22M139%20197%20C%20148%20210%20172%20210%20181%20197%20C%20168%20194%20152%20194%20139%20197%20Z%22%20fill%3D%22%23ffffff%22%20opacity%3D%22.2%22%2F%3E%20%3Cpath%20d%3D%22M141%20264%20L179%20264%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%225%22%20opacity%3D%22.18%22%20stroke-linecap%3D%22round%22%2F%3E%20%3C!--%207.%20brazo%20cercano%20--%3E%20%3Cpath%20d%3D%22M196%20214%20L216%20274%22%20stroke%3D%22%23f7cfae%22%20stroke-width%3D%2224%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cpath%20d%3D%22M216%20274%20L224%20332%22%20stroke%3D%22%23f7cfae%22%20stroke-width%3D%2221%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%2F%3E%20%3Cellipse%20cx%3D%22226%22%20cy%3D%22346%22%20rx%3D%2213%22%20ry%3D%2215%22%20fill%3D%22%23f7cfae%22%2F%3E%20%3C!--%208.%20cabeza%20--%3E%20%3Cellipse%20cx%3D%22160%22%20cy%3D%22112%22%20rx%3D%2256%22%20ry%3D%2258%22%20fill%3D%22%232b2233%22%2F%3E%20%3Cellipse%20cx%3D%22119%22%20cy%3D%22130%22%20rx%3D%227%22%20ry%3D%229%22%20fill%3D%22%23e5b590%22%2F%3E%20%3Cellipse%20cx%3D%22201%22%20cy%3D%22130%22%20rx%3D%227%22%20ry%3D%229%22%20fill%3D%22%23e5b590%22%2F%3E%20%3Cellipse%20cx%3D%22160%22%20cy%3D%22124%22%20rx%3D%2242%22%20ry%3D%2246%22%20fill%3D%22%23f7cfae%22%2F%3E%20%3Cpath%20d%3D%22M118%20116%20C%20118%2076%20202%2076%20202%20116%20C%20194%2098%20182%2092%20168%2097%20C%20150%20103%20130%20106%20118%20116%20Z%22%20fill%3D%22%232b2233%22%2F%3E%20%3Cellipse%20cx%3D%22134%22%20cy%3D%22142%22%20rx%3D%228%22%20ry%3D%225%22%20fill%3D%22%23ef8fa0%22%20opacity%3D%22.45%22%2F%3E%20%3Cellipse%20cx%3D%22186%22%20cy%3D%22142%22%20rx%3D%228%22%20ry%3D%225%22%20fill%3D%22%23ef8fa0%22%20opacity%3D%22.45%22%2F%3E%20%3Cellipse%20cx%3D%22146%22%20cy%3D%22124%22%20rx%3D%225.5%22%20ry%3D%227%22%20fill%3D%22%232b2233%22%2F%3E%20%3Cellipse%20cx%3D%22174%22%20cy%3D%22124%22%20rx%3D%225.5%22%20ry%3D%227%22%20fill%3D%22%232b2233%22%2F%3E%20%3Ccircle%20cx%3D%22148%22%20cy%3D%22121%22%20r%3D%222%22%20fill%3D%22%23ffffff%22%2F%3E%20%3Ccircle%20cx%3D%22176%22%20cy%3D%22121%22%20r%3D%222%22%20fill%3D%22%23ffffff%22%2F%3E%20%3Cpath%20d%3D%22M138%20110%20C%20142%20105%20150%20105%20154%20109%22%20stroke%3D%22%232b2233%22%20stroke-width%3D%223.2%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%20%3Cpath%20d%3D%22M166%20109%20C%20170%20105%20178%20105%20182%20110%22%20stroke%3D%22%232b2233%22%20stroke-width%3D%223.2%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%20%3Cpath%20d%3D%22M151%20145%20C%20156%20151%20164%20151%20169%20145%22%20stroke%3D%22%238a4a5a%22%20stroke-width%3D%223%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%20%3C%2Fsvg%3E%20";
+
+  var maria = window.maria = MariaAvatar.mount({
+    rig: RIG,
+    sheet: SHEET,
+    chat: {
+      name: 'MarIA',
+      status: 'en línea',
+      greeting: '¡Hola! Soy MarIA 👋 Esto es el prototipo del avatar. Preguntame de SEO, GEO o del Campus.',
+      quickReplies: ['¿Qué es GEO?', '¿Cómo entro al Campus?', 'Ayuda con mi web']
+    },
+    nudgeText: '¿Charlamos? Tocá el dedo 👆'
+  });
+
+  // el widget respeta el tema del visor: se le espeja el data-theme de la página
+  function tema() {
+    var t = document.documentElement.getAttribute('data-theme');
+    if (t) maria.root.dataset.theme = t; else delete maria.root.dataset.theme;
+  }
+  tema();
+  new MutationObserver(tema).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  document.getElementById('mandos').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b) return;
+    var q = b.dataset.do;
+    if (q === 'open') maria.open();
+    else if (q === 'close') maria.close();
+    else if (q === 'debug') {
+      var on = maria.root.classList.toggle('ma-debug');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.textContent = on ? 'Ocultar los cortes' : 'Ver los cortes';
+    } else if (q === 'finger') {
+      if (maria.state === 'chat') maria.close();
+      maria.finger.state = 'wait';
+      maria.finger.until = performance.now();
+      maria.finger.btn.style.opacity = '';
+    } else maria.play(q, { blend: 220 });
+  });
+})();
+</script>

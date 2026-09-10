@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarIA Avatar — demo</title>
+<link rel="stylesheet" href="maria-avatar.css">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; min-height: 100vh;
+    font: 15px/1.6 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #17122a;
+    background: radial-gradient(900px 500px at 80% -10%, #ede7ff, transparent 70%), #fbfaff;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 20px 320px; }
+  h1 { font-size: clamp(28px, 5vw, 40px); letter-spacing: -.03em; margin: 0 0 8px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; letter-spacing: -.01em; }
+  p { color: #52496b; max-width: 62ch; }
+  code { background: #efeafd; padding: 1px 5px; border-radius: 5px; font-size: .9em; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .row button {
+    font: inherit; font-size: 13px; font-weight: 550;
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid #d9d1f2; background: #fff; color: #6d28d9;
+  }
+  .row button:hover { background: #f3eeff; }
+  ol { color: #52496b; max-width: 62ch; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #f4f1ff; background: radial-gradient(900px 500px at 80% -10%, #2a2140, transparent 70%), #120f1e; }
+    p, ol { color: #a9a2c4; }
+    .row button { background: #1b1630; border-color: #342b52; color: #c4b5fd; }
+    code { background: #241d3d; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>MarIA articulada</h1>
+  <p>El gif se corta en cajas —cabeza, torso, brazos, antebrazos, manos, piernas— y cada caja
+     se dibuja como una ventana al mismo frame. Las cajas se anidan siguiendo el esqueleto, así
+     cada hueso hereda la rotación del padre y el conjunto se mueve como un muñeco de papel.</p>
+
+  <h2>Probá</h2>
+  <div class="row">
+    <button data-do="saludo">Saludar</button>
+    <button data-do="hablar">Hablar</button>
+    <button data-do="atencion">Señalar</button>
+    <button data-do="open">Abrir el chat</button>
+    <button data-do="close">Volver</button>
+    <button data-do="say">Burbuja suelta</button>
+    <button data-do="debug">Ver los cortes</button>
+    <button data-do="finger">Traer el dedo</button>
+  </div>
+
+  <h2>Cómo se usa con el gif real</h2>
+  <ol>
+    <li>Abrí <code>rigger/index.html</code> y soltá el gif de MarIA.</li>
+    <li>Elegí el frame que sirve de pose base y acomodá las cajas de cada parte.</li>
+    <li>Exportá <code>rig.json</code> + <code>sheet.png</code> y pasáselos a <code>MariaAvatar.mount()</code>.</li>
+  </ol>
+  <p>Scrolleá: MarIA queda fija abajo a la derecha. Cada tanto cruza un dedo por la pantalla;
+     si lo tocás (o le pasás cerca con el mouse) se abre el globo de chat y ella se achica
+     abajo a la izquierda. Cerrando el globo, vuelve.</p>
+</main>
+
+<script src="maria-avatar.js"></script>
+<script>
+(async function () {
+  const rig = await (await fetch('rigs/maria-placeholder.rig.json')).json();
+  const maria = window.maria = MariaAvatar.mount({
+    rig: rig,
+    sheet: 'art/maria-placeholder.svg',
+    chat: {
+      name: 'MarIA',
+      status: 'en línea',
+      greeting: '¡Hola! Soy MarIA 👋 ¿En qué andás? Preguntame de SEO, GEO o del Campus.',
+      quickReplies: ['¿Qué es GEO?', '¿Cómo entro al Campus?', 'Ayuda con mi web']
+    }
+  });
+
+  document.querySelector('.row').addEventListener('click', function (ev) {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    const what = b.dataset.do;
+    if (what === 'open') maria.open();
+    else if (what === 'close') maria.close();
+    else if (what === 'say') maria.say('Che, ¿te muestro cómo quedó el rig? 👀', 5000);
+    else if (what === 'debug') maria.root.classList.toggle('ma-debug');
+    else if (what === 'finger') { maria.finger.state = 'wait'; maria.finger.until = performance.now(); }
+    else maria.play(what, { blend: 220 });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarIA rigger — cortar el gif en partes</title>
+<link rel="stylesheet" href="../maria-avatar.css">
+<style>
+  :root {
+    --bg: #12101c; --panel: #1b1830; --line: #302a4d; --ink: #f3f0ff; --soft: #a49cc6;
+    --accent: #a78bfa; --accent-2: #f472b6; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: #171429;
+  }
+  header h1 { font-size: 15px; margin: 0; letter-spacing: -.01em; }
+  header .sep { flex: 1; }
+  .btn {
+    font: inherit; font-size: 13px; padding: 7px 13px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--line); background: #241f3d; color: var(--ink);
+  }
+  .btn:hover { background: #2e2750; }
+  .btn.primary { background: linear-gradient(120deg, #7c3aed, #ec4899); border-color: transparent; font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; height: calc(100vh - 53px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+
+  .lienzo { position: relative; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .drop {
+    border: 2px dashed var(--line); border-radius: 16px; padding: 46px 24px; text-align: center; color: var(--soft);
+  }
+  .drop.hot { border-color: var(--accent); background: #1d1836; }
+  canvas#lienzo { background:
+      repeating-conic-gradient(#221d3a 0% 25%, #1a1730 0% 50%) 50% / 18px 18px;
+    border-radius: 12px; touch-action: none; max-width: 100%; cursor: crosshair; }
+  .tira { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .tira button {
+    border: 2px solid transparent; border-radius: 8px; padding: 0; background: #0e0c18; cursor: pointer; flex: none;
+  }
+  .tira button[aria-pressed="true"] { border-color: var(--accent); }
+  .tira img { display: block; height: 62px; border-radius: 6px; }
+
+  aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 16px; }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--soft); margin: 20px 0 8px; }
+  aside h2:first-child { margin-top: 0; }
+  .fila { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .fila label { flex: 1; color: var(--soft); }
+  .fila input[type="range"] { width: 130px; accent-color: var(--accent); }
+  .fila output { width: 34px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .huesos { display: flex; flex-wrap: wrap; gap: 5px; }
+  .huesos button {
+    font: inherit; font-size: 11.5px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: #241f3d; color: var(--soft);
+  }
+  .huesos button[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); background: #322a56; }
+  .previo {
+    position: relative; height: 230px; border-radius: 12px; border: 1px solid var(--line);
+    background: repeating-conic-gradient(#221d3a 0% 25%, #1a1730 0% 50%) 50% / 16px 16px;
+  }
+  .nota { color: var(--soft); font-size: 12px; line-height: 1.5; }
+  .nota code { background: #0f0d1c; padding: 1px 5px; border-radius: 4px; }
+  textarea {
+    width: 100%; height: 120px; background: #0f0d1c; color: #c7bff0; border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
+  }
+  .aviso { color: #fca5a5; font-size: 12px; min-height: 16px; }
+  .ok { color: #86efac; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MarIA rigger</h1>
+  <input type="file" id="archivo" accept="image/gif,image/png,image/webp,image/jpeg" hidden>
+  <button class="btn" id="abrir">Abrir gif / imagen</button>
+  <button class="btn" id="encajar" disabled>Encajar al personaje</button>
+  <label class="fila" style="margin:0"><input type="checkbox" id="verCajas"> <span>ver cajas</span></label>
+  <label class="fila" style="margin:0"><input type="checkbox" id="verImagen" checked> <span>ver imagen</span></label>
+  <span class="sep"></span>
+  <span class="aviso" id="aviso"></span>
+  <button class="btn" id="probarChat" disabled>Probar el globo</button>
+  <button class="btn primary" id="exportar" disabled>Exportar rig + sheet</button>
+</header>
+
+<main>
+  <section class="lienzo">
+    <div class="drop" id="drop">
+      Soltá acá el <b>gif de MarIA</b> (o un png con fondo transparente).<br>
+      Se decodifica en el navegador: no se sube a ningún lado.
+    </div>
+    <canvas id="lienzo" width="10" height="10" hidden></canvas>
+    <div class="tira" id="tira"></div>
+  </section>
+
+  <aside>
+    <h2>1. Esqueleto</h2>
+    <p class="nota">Arrastrá los puntos sobre la imagen: cuello, hombros, codos, muñecas, cadera,
+      rodillas y tobillos. Cada tramo se convierte en un hueso con su recorte.</p>
+    <div class="huesos" id="huesos"></div>
+
+    <h2>2. Grosores</h2>
+    <div id="anchos"></div>
+    <div class="fila">
+      <label>brazo/pierna cercana</label>
+      <select id="lado" class="btn" style="padding:5px 8px">
+        <option value="d">derecha (la de la pantalla)</option>
+        <option value="i">izquierda</option>
+      </select>
+    </div>
+
+    <h2>3. Cara</h2>
+    <p class="nota">Para que parpadee y mueva la boca. Elegí el color con el gotero y arrastrá
+      los tres rectángulos sobre los ojos y la boca.</p>
+    <div class="fila">
+      <label>piel (párpados)</label>
+      <input type="color" id="colorPiel" value="#f7cfae">
+      <button class="btn" id="goteroPiel" style="padding:4px 8px">gotero</button>
+    </div>
+    <div class="fila">
+      <label>boca</label>
+      <input type="color" id="colorBoca" value="#7d3b4c">
+      <button class="btn" id="goteroBoca" style="padding:4px 8px">gotero</button>
+    </div>
+    <div class="fila"><label>usar cara</label><input type="checkbox" id="usarCara" checked></div>
+
+    <h2>4. Previsualización</h2>
+    <div class="previo" id="previo"></div>
+    <p class="nota">Se anima en vivo con el rig actual. Si una parte “arrastra” pixeles de la de
+      al lado, achicá el grosor o corré la articulación. Si algo <b>desaparece</b> (una cola de
+      pelo, una manga) es que no entró en ninguna caja: ensanchá la parte que le corresponde.</p>
+
+    <h2>5. Exportar</h2>
+    <p class="nota">Guardá <code>rig.json</code> y <code>sheet.png</code> juntos y pasáselos a
+      <code>MariaAvatar.mount()</code>.</p>
+    <textarea id="salida" readonly placeholder="el rig aparece acá"></textarea>
+    <div class="fila" style="gap:6px">
+      <button class="btn" id="copiar">Copiar JSON</button>
+      <a class="btn" id="bajarRig" download="maria.rig.json">Bajar rig.json</a>
+      <a class="btn" id="bajarSheet" download="maria-sheet.png">Bajar sheet.png</a>
+    </div>
+  </aside>
+</main>
+
+<script src="gif-decoder.js"></script>
+<script src="../maria-avatar.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------------ estado */
+
+var img = null;            // canvas con el frame elegido
+var frames = [];           // frames del gif
+var sheetURL = null;
+var avatar = null;
+var sel = null;            // hueso seleccionado
+var gotero = null;         // 'piel' | 'boca' | null
+var view = { s: 1, w: 0, h: 0 };
+
+var P = {                  // puntos del esqueleto, en coordenadas de la imagen
+  cabeza_top: [0, 0], cuello: [0, 0], cadera: [0, 0],
+  hombro_i: [0, 0], codo_i: [0, 0], muneca_i: [0, 0],
+  hombro_d: [0, 0], codo_d: [0, 0], muneca_d: [0, 0],
+  rodilla_i: [0, 0], tobillo_i: [0, 0], punta_i: [0, 0],
+  rodilla_d: [0, 0], tobillo_d: [0, 0], punta_d: [0, 0]
+};
+
+var W = { cabeza: 40, torso_top: 40, torso_bot: 52, faldon: 16, brazo: 20, antebrazo: 17, mano: 20, muslo: 26, pierna: 22, pie: 18 };
+
+var cara = {
+  ojo_i: [0, 0, 0, 0], ojo_d: [0, 0, 0, 0], boca: [0, 0, 0, 0],
+  piel: '#f7cfae', bocaColor: '#7d3b4c', usar: true
+};
+
+var SEGMENTOS = [
+  { id: 'torso',       a: 'cadera',    b: 'cuello',     w: 'torso_bot', w2: 'torso_top', tipo: 'trapecio', parent: 'cadera', z: 3 },
+  { id: 'cabeza',      a: 'cuello',    b: 'cabeza_top', w: 'cabeza',    tipo: 'elipse',  parent: 'torso',  z: 2 },
+  { id: 'brazo_i',     a: 'hombro_i',  b: 'codo_i',     w: 'brazo',     parent: 'torso',       z: -1 },
+  { id: 'antebrazo_i', a: 'codo_i',    b: 'muneca_i',   w: 'antebrazo', parent: 'brazo_i' },
+  { id: 'mano_i',      a: 'muneca_i',  b: null,         w: 'mano',      tipo: 'mano',    parent: 'antebrazo_i', follow: .45 },
+  { id: 'brazo_d',     a: 'hombro_d',  b: 'codo_d',     w: 'brazo',     parent: 'torso',       z: 1 },
+  { id: 'antebrazo_d', a: 'codo_d',    b: 'muneca_d',   w: 'antebrazo', parent: 'brazo_d' },
+  { id: 'mano_d',      a: 'muneca_d',  b: null,         w: 'mano',      tipo: 'mano',    parent: 'antebrazo_d', follow: .45 },
+  { id: 'muslo_i',     a: 'cadera_i',  b: 'rodilla_i',  w: 'muslo',     parent: 'cadera', z: 0 },
+  { id: 'pierna_i',    a: 'rodilla_i', b: 'tobillo_i',  w: 'pierna',    parent: 'muslo_i' },
+  { id: 'pie_i',       a: 'tobillo_i', b: 'punta_i',    w: 'pie',       parent: 'pierna_i' },
+  { id: 'muslo_d',     a: 'cadera_d',  b: 'rodilla_d',  w: 'muslo',     parent: 'cadera', z: 1 },
+  { id: 'pierna_d',    a: 'rodilla_d', b: 'tobillo_d',  w: 'pierna',    parent: 'muslo_d' },
+  { id: 'pie_d',       a: 'tobillo_d', b: 'punta_d',    w: 'pie',       parent: 'pierna_d' }
+];
+
+var $ = function (id) { return document.getElementById(id); };
+var cv = $('lienzo'), ctx = cv.getContext('2d');
+
+/* puntos derivados (las dos caderas salen del ancho del torso) */
+function punto(id) {
+  if (id === 'cadera_i') return [P.cadera[0] - W.torso_bot * 0.22, P.cadera[1]];
+  if (id === 'cadera_d') return [P.cadera[0] + W.torso_bot * 0.22, P.cadera[1]];
+  return P[id];
+}
+
+/* ------------------------------------------------------------ carga de gif */
+
+function cargarArchivo(file) {
+  var aviso = $('aviso');
+  aviso.textContent = 'leyendo…';
+  aviso.className = 'aviso';
+  var fr = new FileReader();
+  fr.onload = function () {
+    if (/\.gif$/i.test(file.name) || file.type === 'image/gif') {
+      try {
+        var g = GifDecoder.decode(fr.result);
+        frames = g.frames.map(function (f) {
+          var c = document.createElement('canvas');
+          c.width = g.width; c.height = g.height;
+          c.getContext('2d').putImageData(f.imageData, 0, 0);
+          return c;
+        });
+        aviso.textContent = frames.length + ' frames';
+        aviso.className = 'aviso ok';
+        pintarTira();
+        usarFrame(0);
+        return;
+      } catch (e) {
+        aviso.textContent = 'GIF ilegible (' + e.message + '), lo abro como imagen';
+      }
+    }
+    var blob = new Blob([fr.result]);
+    var im = new Image();
+    im.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = im.naturalWidth; c.height = im.naturalHeight;
+      c.getContext('2d').drawImage(im, 0, 0);
+      frames = [c];
+      pintarTira();
+      usarFrame(0);
+      aviso.textContent = im.naturalWidth + '×' + im.naturalHeight;
+      aviso.className = 'aviso ok';
+      URL.revokeObjectURL(im.src);
+    };
+    im.onerror = function () { aviso.textContent = 'no pude abrir el archivo'; };
+    im.src = URL.createObjectURL(blob);
+  };
+  fr.readAsArrayBuffer(file);
+}
+
+function pintarTira() {
+  var t = $('tira');
+  t.innerHTML = '';
+  if (frames.length < 2) return;
+  frames.forEach(function (c, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    var im = document.createElement('img');
+    im.src = c.toDataURL();
+    b.appendChild(im);
+    b.addEventListener('click', function () {
+      [].forEach.call(t.children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      usarFrame(i);
+    });
+    t.appendChild(b);
+  });
+}
+
+function usarFrame(i) {
+  img = frames[i];
+  sheetURL = img.toDataURL('image/png');
+  $('drop').hidden = true;
+  cv.hidden = false;
+  $('encajar').disabled = false;
+  $('exportar').disabled = false;
+  $('probarChat').disabled = false;
+  ajustarVista();
+  if (!P.cuello[1]) encajar();
+  dibujar();
+  refrescarPreview(true);
+}
+
+function ajustarVista() {
+  var maxW = Math.min(720, (document.querySelector('.lienzo').clientWidth || 720) - 32);
+  var maxH = Math.max(320, window.innerHeight - 220);
+  view.s = Math.min(maxW / img.width, maxH / img.height, 3);
+  view.w = Math.round(img.width * view.s);
+  view.h = Math.round(img.height * view.s);
+  cv.width = view.w; cv.height = view.h;
+}
+
+/* Perfil de la silueta: por cada fila, cuántos pixeles del personaje hay y
+   entre qué x. Con eso se ubican solos el cuello, los hombros y el resto:
+   sirve tanto para un dibujo cabezón como para una foto recortada. */
+function perfil() {
+  var c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  var g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  var d = g.getImageData(0, 0, img.width, img.height).data;
+  var opaco = d[3] > 250 && d[(img.width - 1) * 4 + 3] > 250;
+  var bg = [d[0], d[1], d[2]];
+  var filas = [];
+  var x0 = img.width, y0 = -1, x1 = 0, y1 = 0;
+  for (var y = 0; y < img.height; y++) {
+    var n = 0, a = img.width, b = -1;
+    for (var x = 0; x < img.width; x++) {
+      var o = (y * img.width + x) * 4;
+      var vale = opaco
+        ? (Math.abs(d[o] - bg[0]) + Math.abs(d[o + 1] - bg[1]) + Math.abs(d[o + 2] - bg[2])) > 42
+        : d[o + 3] > 24;
+      if (!vale) continue;
+      n++;
+      if (x < a) a = x;
+      if (x > b) b = x;
+    }
+    filas.push({ n: n, a: a, b: b });
+    if (n > 2) {
+      if (y0 < 0) y0 = y;
+      y1 = y;
+      if (a < x0) x0 = a;
+      if (b > x1) x1 = b;
+    }
+  }
+  if (y0 < 0) return null;
+  return { filas: filas, box: [x0, y0, x1 - x0 + 1, y1 - y0 + 1] };
+}
+
+function encajar() {
+  var pf = perfil();
+  if (!pf) return;
+  var f = pf.filas, b = pf.box;
+  var y0 = b[1], y1 = b[1] + b[3] - 1, H = b[3];
+
+  // cuello: el angostamiento entre la cabeza y los hombros
+  var yCuello = y0 + Math.round(H * .18), min = 1e9;
+  for (var y = y0 + Math.round(H * .06); y < y0 + Math.round(H * .45); y++) {
+    if (f[y].n < min) { min = f[y].n; yCuello = y; }
+  }
+  // cabeza: la fila más ancha por encima del cuello
+  var anchoCabeza = 0, yCabeza = y0;
+  for (y = y0; y < yCuello; y++) if (f[y].n > anchoCabeza) { anchoCabeza = f[y].n; yCabeza = y; }
+
+  // hombros: la primera fila bajo el cuello que se ensancha de golpe
+  var yHombro = Math.min(y1 - 4, yCuello + Math.round(H * .04));
+  for (y = yCuello + 1; y < yCuello + Math.round(H * .22) && y < y1; y++) {
+    if (f[y].n > Math.max(min * 1.6, anchoCabeza * .55)) { yHombro = y; break; }
+  }
+
+  var L = Math.max(8, y1 - yHombro);
+  var en = function (yy) { return f[Math.max(y0, Math.min(y1, Math.round(yy)))]; };
+  var lado = function (yy, k) {
+    var r = en(yy), w = Math.max(4, r.b - r.a);
+    return [Math.round(r.a + w * k), Math.round(r.b - w * k)];
+  };
+
+  var yCodo = yHombro + L * .22, yMuneca = yHombro + L * .42;
+  var yCadera = yHombro + L * .42, yRodilla = yHombro + L * .70, yTobillo = yHombro + L * .93;
+  var hom = lado(yHombro, .16), cod = lado(yCodo, .10), mun = lado(yMuneca, .07);
+  var rod = lado(yRodilla, .28), tob = lado(yTobillo, .27);
+  var filaCadera = en(yCadera), cx = Math.round((filaCadera.a + filaCadera.b) / 2);
+
+  P.cabeza_top = [cx, y0];
+  P.cuello = [cx, yCuello];
+  P.cadera = [cx, Math.round(yCadera)];
+  P.hombro_i = [hom[0], Math.round(yHombro)];
+  P.hombro_d = [hom[1], Math.round(yHombro)];
+  P.codo_i = [cod[0], Math.round(yCodo)];
+  P.codo_d = [cod[1], Math.round(yCodo)];
+  P.muneca_i = [mun[0], Math.round(yMuneca)];
+  P.muneca_d = [mun[1], Math.round(yMuneca)];
+  P.rodilla_i = [rod[0], Math.round(yRodilla)];
+  P.rodilla_d = [rod[1], Math.round(yRodilla)];
+  P.tobillo_i = [tob[0], Math.round(yTobillo)];
+  P.tobillo_d = [tob[1], Math.round(yTobillo)];
+  P.punta_i = [Math.round(tob[0] - (tob[1] - tob[0]) * .10), y1];
+  P.punta_d = [Math.round(tob[1] + (tob[1] - tob[0]) * .10), y1];
+
+  var anchoHombro = Math.max(8, en(yHombro).b - en(yHombro).a);
+  // a la altura de la cadera los brazos colgados ensanchan la fila: se acota
+  // con el ancho de hombros para no darle al torso el ancho de los brazos
+  var anchoCadera = Math.min(en(yCadera).b - en(yCadera).a, anchoHombro * 1.15);
+  W.cabeza = Math.max(6, Math.round(anchoCabeza / 2 * .92));
+  W.torso_top = Math.max(8, Math.round(anchoHombro * .62));
+  W.torso_bot = Math.max(8, Math.round(Math.max(anchoCadera, anchoHombro * .8) * .78));
+  W.faldon = Math.round(W.torso_bot * .3);
+  W.brazo = Math.max(5, Math.round(anchoHombro * .22));
+  W.antebrazo = Math.max(4, Math.round(anchoHombro * .19));
+  W.mano = Math.max(5, Math.round(anchoHombro * .26));
+  W.muslo = Math.max(6, Math.round((rod[1] - rod[0]) * .45));
+  W.pierna = Math.max(5, Math.round((tob[1] - tob[0]) * .36));
+  W.pie = Math.max(5, Math.round((tob[1] - tob[0]) * .34));
+
+  var rx = W.cabeza;
+  var ex = cx, ey = (y0 + yCuello) / 2 + rx * .06;
+  var ow = Math.max(4, Math.round(rx * .26)), oh = Math.max(4, Math.round(rx * .30));
+  cara.ojo_i = [Math.round(ex - rx * .26 - ow / 2), Math.round(ey - oh * .55), ow, oh];
+  cara.ojo_d = [Math.round(ex + rx * .26 - ow / 2), Math.round(ey - oh * .55), ow, oh];
+  cara.boca = [Math.round(ex - rx * .18), Math.round(ey + rx * .32), Math.max(5, Math.round(rx * .36)), Math.max(4, Math.round(rx * .24))];
+
+  pintarAnchos();
+  dibujar();
+  refrescarPreview(true);
+}
+
+/* ------------------------------------------------------------------ dibujo */
+
+function T(p) { return [p[0] * view.s, p[1] * view.s]; }
+
+function dibujar() {
+  if (!img) return;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if ($('verImagen').checked) ctx.drawImage(img, 0, 0, view.w, view.h);
+
+  var rig = construirRig();
+  if ($('verCajas').checked) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244,114,182,.85)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px ui-monospace, monospace';
+    rig.bones.forEach(function (b) {
+      ctx.strokeRect(b.box[0] * view.s, b.box[1] * view.s, b.box[2] * view.s, b.box[3] * view.s);
+      ctx.fillStyle = 'rgba(244,114,182,.9)';
+      ctx.fillText(b.id, b.box[0] * view.s + 2, b.box[1] * view.s + 10);
+    });
+    ctx.restore();
+  }
+
+  // siluetas de los huesos
+  SEGMENTOS.forEach(function (s) {
+    var a = T(punto(s.a));
+    var w = W[s.w] * view.s;
+    ctx.save();
+    ctx.strokeStyle = sel === s.id ? 'rgba(167,139,250,.95)' : 'rgba(167,139,250,.35)';
+    ctx.lineCap = 'round';
+    if (s.tipo === 'mano') {
+      ctx.beginPath(); ctx.arc(a[0], a[1], w / 2, 0, 7); ctx.stroke();
+    } else if (s.tipo === 'elipse') {
+      var b2 = T(punto(s.b));
+      ctx.beginPath();
+      ctx.ellipse((a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2, w, Math.hypot(b2[0] - a[0], b2[1] - a[1]) / 2 * 1.12, 0, 0, 7);
+      ctx.stroke();
+    } else {
+      var b3 = T(punto(s.b));
+      if (s.tipo === 'trapecio') {
+        var d0 = [b3[0] - a[0], b3[1] - a[1]];
+        var l0 = Math.hypot(d0[0], d0[1]) || 1;
+        a = [a[0] - d0[0] / l0 * (W.faldon || 0) * view.s, a[1] - d0[1] / l0 * (W.faldon || 0) * view.s];
+      }
+      ctx.lineWidth = w;
+      ctx.globalAlpha = sel === s.id ? .35 : .16;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b3[0], b3[1]); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b3[0], b3[1]); ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // articulaciones
+  Object.keys(P).forEach(function (k) {
+    var p = T(P[k]);
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], 5.5, 0, 7);
+    ctx.fillStyle = '#12101c';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#f472b6';
+    ctx.stroke();
+  });
+
+  // cara
+  if (cara.usar) {
+    [['ojo_i', cara.piel], ['ojo_d', cara.piel], ['boca', cara.bocaColor]].forEach(function (par) {
+      var r = cara[par[0]];
+      ctx.save();
+      ctx.strokeStyle = par[1];
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(r[0] * view.s, r[1] * view.s, r[2] * view.s, r[3] * view.s);
+      ctx.restore();
+    });
+  }
+}
+
+/* ------------------------------------------------------- construir el rig */
+
+function bbox(pts, pad, w, h) {
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  pts.forEach(function (p) {
+    if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
+    if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
+  });
+  x0 = Math.max(0, Math.floor(x0 - pad)); y0 = Math.max(0, Math.floor(y0 - pad));
+  x1 = Math.min(w, Math.ceil(x1 + pad));  y1 = Math.min(h, Math.ceil(y1 + pad));
+  return [x0, y0, Math.max(2, x1 - x0), Math.max(2, y1 - y0)];
+}
+
+function construirRig() {
+  var wI = img ? img.width : 100, hI = img ? img.height : 100;
+  var cerca = $('lado').value;
+  var bones = [{
+    id: 'cadera', box: [Math.round(P.cadera[0] - W.torso_bot / 2), Math.round(P.cadera[1] - 8),
+                        Math.round(W.torso_bot), 16], pivot: [P.cadera[0], P.cadera[1]], art: false
+  }];
+
+  SEGMENTOS.forEach(function (s) {
+    var a = punto(s.a);
+    var w = W[s.w];
+    var bone = { id: s.id, parent: s.parent, pivot: [Math.round(a[0]), Math.round(a[1])] };
+    if (s.z != null) bone.z = s.z;
+    if (s.follow) bone.follow = s.follow;
+
+    // el lado "cercano" va adelante del torso y del otro lado
+    if (s.id === 'brazo_i') bone.z = cerca === 'i' ? 1 : -1;
+    if (s.id === 'brazo_d') bone.z = cerca === 'd' ? 1 : -1;
+    if (s.id === 'muslo_i') bone.z = cerca === 'i' ? 1 : 0;
+    if (s.id === 'muslo_d') bone.z = cerca === 'd' ? 1 : 0;
+
+    if (s.tipo === 'mano') {
+      var r = w / 2;
+      bone.box = bbox([[a[0] - r, a[1] - r], [a[0] + r * 1.2, a[1] + r * 1.6]], 2, wI, hI);
+      bone.clip = 'ellipse(' + Math.round(r + 1) + 'px ' + Math.round(r * 1.25) + 'px at ' +
+                  Math.round(a[0] - bone.box[0]) + 'px ' + Math.round(a[1] + r * .3 - bone.box[1]) + 'px)';
+    } else if (s.tipo === 'elipse') {
+      // la cabeza se recorta con una caja de esquinas redondeadas y no con
+      // una elipse: así entran el pelo, la cola y las orejas (arriba del
+      // cuello no hay nada más que se pueda colar)
+      var b = punto(s.b);
+      var cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2;
+      var ry = Math.hypot(b[0] - a[0], b[1] - a[1]) / 2 * 1.12;
+      bone.box = bbox([[cx - w, cy - ry], [cx + w, cy + ry]], 3, wI, hI);
+      bone.clip = 'inset(0 round 22%)';
+    } else if (s.tipo === 'trapecio') {
+      var b2 = punto(s.b);
+      var w2 = W[s.w2];
+      var dx = b2[0] - a[0], dy = b2[1] - a[1], L = Math.hypot(dx, dy) || 1;
+      var px = -dy / L, py = dx / L;
+      // el "faldón" estira el trapecio por debajo de la cadera para que la
+      // pollera o la remera larga entren enteras en el hueso del torso
+      var fx = a[0] - dx / L * (W.faldon || 0), fy = a[1] - dy / L * (W.faldon || 0);
+      var q = [
+        [fx + px * w / 2, fy + py * w / 2], [b2[0] + px * w2 / 2, b2[1] + py * w2 / 2],
+        [b2[0] - px * w2 / 2, b2[1] - py * w2 / 2], [fx - px * w / 2, fy - py * w / 2]
+      ];
+      bone.box = bbox(q, 2, wI, hI);
+      bone.clip = 'polygon(' + q.map(function (p) {
+        return Math.round(p[0] - bone.box[0]) + 'px ' + Math.round(p[1] - bone.box[1]) + 'px';
+      }).join(', ') + ')';
+    } else {
+      var b3 = punto(s.b), r2 = w / 2;
+      bone.box = bbox([[Math.min(a[0], b3[0]) - r2, Math.min(a[1], b3[1]) - r2],
+                       [Math.max(a[0], b3[0]) + r2, Math.max(a[1], b3[1]) + r2]], 2, wI, hI);
+      bone.clip = { capsule: [Math.round(a[0]), Math.round(a[1]), Math.round(b3[0]), Math.round(b3[1]), Math.round(r2)] };
+    }
+    bones.push(bone);
+  });
+
+  var rig = {
+    name: 'MarIA',
+    stage: { w: wI, h: hI },
+    shadow: { x: Math.round(P.cadera[0]), y: Math.round(Math.max(P.tobillo_i[1], P.tobillo_d[1]) + W.pie * .6),
+              w: Math.round(W.torso_bot * 1.7), h: Math.round(W.torso_bot * .3) },
+    bones: bones
+  };
+
+  if (cara.usar) {
+    rig.overlays = [
+      { bone: 'cabeza', role: 'lid', x: cara.ojo_i[0], y: cara.ojo_i[1], w: cara.ojo_i[2], h: cara.ojo_i[3], shape: 'rect', radius: 4, color: cara.piel },
+      { bone: 'cabeza', role: 'lid', x: cara.ojo_d[0], y: cara.ojo_d[1], w: cara.ojo_d[2], h: cara.ojo_d[3], shape: 'rect', radius: 4, color: cara.piel },
+      { bone: 'cabeza', role: 'mouth', x: cara.boca[0], y: cara.boca[1], w: cara.boca[2], h: cara.boca[3], color: cara.bocaColor }
+    ];
+  }
+  return rig;
+}
+
+/* ------------------------------------------------------------- interacción */
+
+var drag = null;
+
+function pos(ev) {
+  // se mide contra el tamaño real en pantalla: si el canvas quedó escalado
+  // por CSS, el mapeo a coordenadas de la imagen sigue siendo correcto
+  var r = cv.getBoundingClientRect();
+  var kx = cv.width / (r.width || 1), ky = cv.height / (r.height || 1);
+  return [(ev.clientX - r.left) * kx / view.s, (ev.clientY - r.top) * ky / view.s];
+}
+
+cv.addEventListener('pointerdown', function (ev) {
+  if (!img) return;
+  var p = pos(ev);
+
+  if (gotero) {
+    var g = document.createElement('canvas');
+    g.width = img.width; g.height = img.height;
+    var gc = g.getContext('2d', { willReadFrequently: true });
+    gc.drawImage(img, 0, 0);
+    var d = gc.getImageData(Math.max(0, Math.round(p[0])), Math.max(0, Math.round(p[1])), 1, 1).data;
+    var hex = '#' + [d[0], d[1], d[2]].map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+    if (gotero === 'piel') { cara.piel = hex; $('colorPiel').value = hex; }
+    else { cara.bocaColor = hex; $('colorBoca').value = hex; }
+    gotero = null;
+    cv.style.cursor = 'crosshair';
+    dibujar(); refrescarPreview();
+    return;
+  }
+
+  // ¿cae sobre un rectángulo de la cara?
+  if (cara.usar) {
+    var claves = ['ojo_i', 'ojo_d', 'boca'];
+    for (var i = 0; i < claves.length; i++) {
+      var r2 = cara[claves[i]];
+      if (p[0] > r2[0] - 3 && p[0] < r2[0] + r2[2] + 3 && p[1] > r2[1] - 3 && p[1] < r2[1] + r2[3] + 3) {
+        drag = { tipo: 'cara', k: claves[i], dx: p[0] - r2[0], dy: p[1] - r2[1],
+                 esquina: p[0] > r2[0] + r2[2] - 6 && p[1] > r2[1] + r2[3] - 6 };
+        cv.setPointerCapture(ev.pointerId);
+        return;
+      }
+    }
+  }
+
+  // ¿cae sobre una articulación?
+  var mejor = null, dm = 14 / view.s;
+  Object.keys(P).forEach(function (k) {
+    var d2 = Math.hypot(P[k][0] - p[0], P[k][1] - p[1]);
+    if (d2 < dm) { dm = d2; mejor = k; }
+  });
+  if (mejor) {
+    drag = { tipo: 'punto', k: mejor };
+    sel = (SEGMENTOS.filter(function (s) { return s.a === mejor; })[0] || {}).id || null;
+    pintarHuesos();
+    cv.setPointerCapture(ev.pointerId);
+    dibujar();
+  }
+});
+
+cv.addEventListener('pointermove', function (ev) {
+  if (!drag) return;
+  var p = pos(ev);
+  if (drag.tipo === 'punto') {
+    P[drag.k] = [Math.round(p[0]), Math.round(p[1])];
+  } else {
+    var r = cara[drag.k];
+    if (drag.esquina) {
+      r[2] = Math.max(4, Math.round(p[0] - r[0]));
+      r[3] = Math.max(4, Math.round(p[1] - r[1]));
+    } else {
+      r[0] = Math.round(p[0] - drag.dx);
+      r[1] = Math.round(p[1] - drag.dy);
+    }
+  }
+  dibujar();
+  refrescarPreview();
+});
+
+cv.addEventListener('pointerup', function () { drag = null; refrescarPreview(); });
+cv.addEventListener('pointercancel', function () { drag = null; });
+
+/* ---------------------------------------------------------------- panel UI */
+
+function pintarHuesos() {
+  var cont = $('huesos');
+  cont.innerHTML = '';
+  SEGMENTOS.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.id;
+    b.setAttribute('aria-pressed', sel === s.id ? 'true' : 'false');
+    b.addEventListener('click', function () { sel = sel === s.id ? null : s.id; pintarHuesos(); dibujar(); });
+    cont.appendChild(b);
+  });
+}
+
+function pintarAnchos() {
+  var cont = $('anchos');
+  cont.innerHTML = '';
+  Object.keys(W).forEach(function (k) {
+    var f = document.createElement('div');
+    f.className = 'fila';
+    var l = document.createElement('label'); l.textContent = k.replace('_', ' ');
+    var r = document.createElement('input');
+    r.type = 'range'; r.min = 4; r.max = 260; r.value = W[k];
+    var o = document.createElement('output'); o.textContent = W[k];
+    r.addEventListener('input', function () {
+      W[k] = +r.value; o.textContent = r.value;
+      dibujar(); refrescarPreview();
+    });
+    f.appendChild(l); f.appendChild(r); f.appendChild(o);
+    cont.appendChild(f);
+  });
+}
+
+var pendiente = null;
+function refrescarPreview(forzar) {
+  clearTimeout(pendiente);
+  pendiente = setTimeout(function () {
+    if (!img) return;
+    var rig = construirRig();
+    $('salida').value = JSON.stringify(rig, null, 2);
+    var blob = new Blob([$('salida').value], { type: 'application/json' });
+    $('bajarRig').href = URL.createObjectURL(blob);
+    $('bajarSheet').href = sheetURL;
+    if (!avatar) {
+      avatar = MariaAvatar.mount({
+        rig: rig, sheet: sheetURL, target: $('previo'),
+        finger: false, autoGreet: false, dockSize: 96,
+        chat: { greeting: 'Este es el rig que acabás de armar. Si algo se despega, movelo y mirá acá.' }
+      });
+    } else {
+      avatar.setRig(rig, sheetURL);
+    }
+  }, forzar ? 0 : 130);
+}
+
+$('abrir').addEventListener('click', function () { $('archivo').click(); });
+$('archivo').addEventListener('change', function (e) { if (e.target.files[0]) cargarArchivo(e.target.files[0]); });
+$('encajar').addEventListener('click', encajar);
+$('verCajas').addEventListener('change', dibujar);
+$('verImagen').addEventListener('change', dibujar);
+$('lado').addEventListener('change', function () { dibujar(); refrescarPreview(); });
+$('usarCara').addEventListener('change', function (e) { cara.usar = e.target.checked; dibujar(); refrescarPreview(); });
+$('colorPiel').addEventListener('input', function (e) { cara.piel = e.target.value; dibujar(); refrescarPreview(); });
+$('colorBoca').addEventListener('input', function (e) { cara.bocaColor = e.target.value; dibujar(); refrescarPreview(); });
+$('goteroPiel').addEventListener('click', function () { gotero = 'piel'; cv.style.cursor = 'cell'; });
+$('goteroBoca').addEventListener('click', function () { gotero = 'boca'; cv.style.cursor = 'cell'; });
+$('probarChat').addEventListener('click', function () { if (avatar) avatar.toggle(); });
+$('copiar').addEventListener('click', function () {
+  navigator.clipboard.writeText($('salida').value).then(function () {
+    $('aviso').textContent = 'rig copiado'; $('aviso').className = 'aviso ok';
+  });
+});
+$('exportar').addEventListener('click', function () {
+  refrescarPreview(true);
+  setTimeout(function () { $('bajarRig').click(); setTimeout(function () { $('bajarSheet').click(); }, 300); }, 60);
+});
+
+var drop = $('drop');
+['dragenter', 'dragover'].forEach(function (t) {
+  document.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('hot'); });
+});
+['dragleave', 'drop'].forEach(function (t) {
+  document.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('hot'); });
+});
+document.addEventListener('drop', function (e) {
+  var f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) cargarArchivo(f);
+});
+window.addEventListener('resize', function () { if (img) { ajustarVista(); dibujar(); } });
+
+pintarHuesos();
+pintarAnchos();
+})();
+</script>
+</body>
+</html>

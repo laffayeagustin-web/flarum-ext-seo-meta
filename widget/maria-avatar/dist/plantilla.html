@@ -1,0 +1,304 @@
+<title>MarIA articulada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Karla:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+/*  ======= MARIA-AVATAR-CSS =======  */
+
+:root {
+  --tinta: #1b1628;
+  --tinta-2: #5f5878;
+  --papel: #f2f0f7;
+  --panel: #ffffff;
+  --linea: #e2ddef;
+  --violeta: #6d28d9;
+  --magenta: #d61f8b;
+  --corte: #e0409a;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --titulo: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --texto: "Karla", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tinta: #efecfa;
+    --tinta-2: #a49cc4;
+    --papel: #131020;
+    --panel: #1c1730;
+    --linea: #2e2748;
+    --violeta: #a78bfa;
+    --magenta: #f472b6;
+    --corte: #f472b6;
+  }
+}
+:root[data-theme="dark"] {
+  --tinta: #efecfa;
+  --tinta-2: #a49cc4;
+  --papel: #131020;
+  --panel: #1c1730;
+  --linea: #2e2748;
+  --violeta: #a78bfa;
+  --magenta: #f472b6;
+  --corte: #f472b6;
+}
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--texto);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.envoltorio {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 40px 340px;
+}
+@media (max-width: 430px) { .envoltorio { padding-block: 28px 300px; } }
+
+.encabezado { display: flex; flex-direction: column; gap: 14px; }
+.rotulo {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--magenta);
+}
+h1 {
+  font-family: var(--titulo);
+  font-weight: 800;
+  font-size: clamp(38px, 9vw, 66px);
+  line-height: .96;
+  letter-spacing: -.035em;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--violeta), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bajada { font-size: 18px; color: var(--tinta-2); margin: 0; max-width: 54ch; }
+
+h2 {
+  font-family: var(--titulo);
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -.02em;
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+p { margin: 0 0 14px; max-width: 62ch; }
+section { margin-top: 46px; }
+strong { font-weight: 700; }
+
+.mandos { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+.mandos button {
+  font: 500 13.5px/1 var(--texto);
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--linea);
+  background: var(--panel);
+  color: var(--tinta);
+  cursor: pointer;
+  transition: border-color .16s ease, transform .16s ease, color .16s ease;
+}
+.mandos button:hover { border-color: var(--violeta); color: var(--violeta); transform: translateY(-1px); }
+.mandos button:focus-visible { outline: 2px solid var(--violeta); outline-offset: 2px; }
+.mandos button[data-do="debug"][aria-pressed="true"] {
+  border-color: var(--corte); color: var(--corte);
+  background: color-mix(in srgb, var(--corte) 9%, var(--panel));
+}
+
+.pasos { display: grid; gap: 1px; background: var(--linea); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; }
+@media (min-width: 620px) { .pasos { grid-template-columns: repeat(3, 1fr); } }
+.paso { background: var(--panel); padding: 18px 16px; display: flex; flex-direction: column; gap: 7px; }
+.paso .n { font-family: var(--mono); font-size: 11px; color: var(--magenta); letter-spacing: .1em; }
+.paso h3 { font-family: var(--titulo); font-weight: 600; font-size: 16px; margin: 0; letter-spacing: -.01em; }
+.paso p { font-size: 14px; color: var(--tinta-2); margin: 0; }
+
+.arbol {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.75;
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 14px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  color: var(--tinta-2);
+  white-space: pre;
+}
+.arbol b { color: var(--tinta); font-weight: 600; }
+.arbol i { color: var(--magenta); font-style: normal; }
+
+.ficha {
+  border-left: 3px solid var(--violeta);
+  padding: 2px 0 2px 16px;
+  margin: 22px 0;
+  color: var(--tinta-2);
+  font-size: 15px;
+}
+.ficha b { color: var(--tinta); }
+
+code {
+  font-family: var(--mono);
+  font-size: .86em;
+  background: color-mix(in srgb, var(--violeta) 11%, transparent);
+  color: var(--violeta);
+  padding: 1.5px 5px;
+  border-radius: 5px;
+}
+
+footer {
+  margin-top: 54px;
+  padding-top: 18px;
+  border-top: 1px solid var(--linea);
+  font-size: 13.5px;
+  color: var(--tinta-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mandos button { transition: none; }
+}
+</style>
+
+<div class="envoltorio">
+  <header class="encabezado">
+    <span class="rotulo">Prototipo · Campus MarIA</span>
+    <h1>MarIA <em>articulada</em></h1>
+    <p class="bajada">El gif deja de ser un video: se corta en partes, se arma como muñeco de papel
+      y se mueve sola. Cada tanto un dedo cruza la pantalla y la señala; si lo tocás, se abre el
+      globo de chat y ella se achica abajo a la izquierda.</p>
+  </header>
+
+  <div class="mandos" id="mandos">
+    <button data-do="saludo">Que salude</button>
+    <button data-do="hablar">Que hable</button>
+    <button data-do="atencion">Que señale</button>
+    <button data-do="finger">Traer el dedo</button>
+    <button data-do="open">Abrir el globo</button>
+    <button data-do="close">Volver</button>
+    <button data-do="debug" aria-pressed="false">Ver los cortes</button>
+  </div>
+
+  <section>
+    <h2>Cómo se mueve</h2>
+    <div class="pasos">
+      <div class="paso">
+        <span class="n">01 · CORTAR</span>
+        <h3>Un frame, quince ventanas</h3>
+        <p>Se elige un frame del gif y cada parte se dibuja como una ventana a esa misma imagen.
+          No hay quince archivos: hay quince recortes.</p>
+      </div>
+      <div class="paso">
+        <span class="n">02 · ANIDAR</span>
+        <h3>La mano cuelga del antebrazo</h3>
+        <p>Cada parte vive adentro de la anterior, así hereda su giro. Mover el hombro arrastra
+          todo el brazo, como en un muñeco articulado.</p>
+      </div>
+      <div class="paso">
+        <span class="n">03 · ANIMAR</span>
+        <h3>Respira aunque no pase nada</h3>
+        <p>Encima de los gestos corre una capa suelta: respiración, balanceo, parpadeo, la mirada
+          que sigue al puntero y el pelo que llega tarde.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>El esqueleto</h2>
+    <p>Quince huesos con nombre. El del lado cercano va adelante del vestido; el del lado lejano,
+      atrás. Con todos los ángulos en cero el muñeco reconstruye el frame original pixel por pixel:
+      por eso las piezas siempre calzan.</p>
+    <div class="arbol"><b>cadera</b>
+├─ muslo_i ─ pierna_i ─ pie_i        <i>(lado lejano)</i>
+├─ muslo_d ─ pierna_d ─ pie_d        <i>(lado cercano)</i>
+└─ <b>torso</b>
+   ├─ brazo_i ─ antebrazo_i ─ mano_i
+   ├─ <b>cabeza</b> ─ pelo               <i>(pelo con inercia)</i>
+   └─ brazo_d ─ antebrazo_d ─ mano_d</div>
+    <div class="ficha">Cada hueso lleva su propio recorte: <b>cápsula</b> para brazos y piernas,
+      <b>trapecio</b> para el torso y el vuelo de la pollera, <b>caja redondeada</b> para la cabeza.
+      Sin eso, al girar el brazo se lleva puesto un pedazo de vestido.</div>
+  </section>
+
+  <section>
+    <h2>El dedo y el globo</h2>
+    <p>El dedo entra por la izquierda, cruza en arco y golpea dos veces al lado de MarIA, que se da
+      vuelta y lo señala. Se lo puede tocar, o simplemente pasarle cerca con el mouse: no hace falta
+      acertarle. Ahí el globo se abre y MarIA se va chiquita al rincón, con la colita del globo
+      apuntándole. Cerrando, vuelve a su lugar.</p>
+    <p>El globo es una cáscara: escucha <code>onSend</code> y ya está listo para colgarlo del chat
+      real del Campus.</p>
+  </section>
+
+  <section>
+    <h2>Con el gif real</h2>
+    <p>Esta MarIA es de mentira: la dibujé para poder probar el mecanismo. Con el gif verdadero el
+      recorrido es el mismo, y hay una herramienta para hacerlo: se suelta el gif, se elige el frame
+      que sirve de pose base, se arrastran las articulaciones sobre la imagen y se exporta el rig.
+      El GIF se decodifica en el navegador, sin subir nada a ningún lado.</p>
+    <div class="ficha">Para que quede idéntica al sitio necesito dos cosas: el <b>gif de MarIA</b>
+      y los <b>colores exactos de maria.ar</b>. Todo el estilo cuelga de variables CSS
+      (<code>--ma-accent</code>, <code>--ma-radius</code>, la tipografía), así que es cambiar tres
+      valores y listo.</div>
+  </section>
+
+  <footer>Prototipo para maria.ar / Campus MarIA · el muñeco, el dedo y el globo corren en esta
+    misma página, sin librerías.</footer>
+</div>
+
+<script>
+/*  ======= MARIA-AVATAR-JS =======  */
+</script>
+
+<script>
+(function () {
+  var RIG = /*  ======= MARIA-RIG =======  */ null;
+  var SHEET = /*  ======= MARIA-SHEET =======  */ '';
+
+  var maria = window.maria = MariaAvatar.mount({
+    rig: RIG,
+    sheet: SHEET,
+    chat: {
+      name: 'MarIA',
+      status: 'en línea',
+      greeting: '¡Hola! Soy MarIA 👋 Esto es el prototipo del avatar. Preguntame de SEO, GEO o del Campus.',
+      quickReplies: ['¿Qué es GEO?', '¿Cómo entro al Campus?', 'Ayuda con mi web']
+    },
+    nudgeText: '¿Charlamos? Tocá el dedo 👆'
+  });
+
+  // el widget respeta el tema del visor: se le espeja el data-theme de la página
+  function tema() {
+    var t = document.documentElement.getAttribute('data-theme');
+    if (t) maria.root.dataset.theme = t; else delete maria.root.dataset.theme;
+  }
+  tema();
+  new MutationObserver(tema).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  document.getElementById('mandos').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b) return;
+    var q = b.dataset.do;
+    if (q === 'open') maria.open();
+    else if (q === 'close') maria.close();
+    else if (q === 'debug') {
+      var on = maria.root.classList.toggle('ma-debug');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.textContent = on ? 'Ocultar los cortes' : 'Ver los cortes';
+    } else if (q === 'finger') {
+      if (maria.state === 'chat') maria.close();
+      maria.finger.state = 'wait';
+      maria.finger.until = performance.now();
+      maria.finger.btn.style.opacity = '';
+    } else maria.play(q, { blend: 220 });
+  });
+})();
+</script>

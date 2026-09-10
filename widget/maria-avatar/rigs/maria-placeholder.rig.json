@@ -1,0 +1,361 @@
+{
+  "name": "MarIA placeholder",
+  "sheet": "../art/maria-placeholder.svg",
+  "stage": {
+    "w": 320,
+    "h": 560
+  },
+  "shadow": {
+    "x": 162,
+    "y": 498,
+    "w": 156,
+    "h": 26
+  },
+  "bones": [
+    {
+      "id": "cadera",
+      "box": [
+        128,
+        296,
+        64,
+        40
+      ],
+      "pivot": [
+        160,
+        312
+      ],
+      "art": false
+    },
+    {
+      "id": "muslo_i",
+      "parent": "cadera",
+      "z": 0,
+      "box": [
+        126,
+        322,
+        40,
+        96
+      ],
+      "pivot": [
+        148,
+        316
+      ],
+      "clip": {
+        "capsule": [
+          148,
+          316,
+          141,
+          410,
+          15
+        ]
+      }
+    },
+    {
+      "id": "pierna_i",
+      "parent": "muslo_i",
+      "box": [
+        123,
+        400,
+        32,
+        96
+      ],
+      "pivot": [
+        141,
+        410
+      ],
+      "clip": {
+        "capsule": [
+          141,
+          410,
+          137,
+          488,
+          12.5
+        ]
+      }
+    },
+    {
+      "id": "pie_i",
+      "parent": "pierna_i",
+      "box": [
+        112,
+        478,
+        50,
+        34
+      ],
+      "pivot": [
+        137,
+        488
+      ],
+      "clip": "inset(6px 2px 4px 4px round 12px)"
+    },
+    {
+      "id": "muslo_d",
+      "parent": "cadera",
+      "z": 1,
+      "box": [
+        158,
+        322,
+        42,
+        98
+      ],
+      "pivot": [
+        175,
+        316
+      ],
+      "clip": {
+        "capsule": [
+          175,
+          316,
+          180,
+          412,
+          16
+        ]
+      }
+    },
+    {
+      "id": "pierna_d",
+      "parent": "muslo_d",
+      "box": [
+        166,
+        402,
+        34,
+        96
+      ],
+      "pivot": [
+        180,
+        412
+      ],
+      "clip": {
+        "capsule": [
+          180,
+          412,
+          183,
+          490,
+          13.5
+        ]
+      }
+    },
+    {
+      "id": "pie_d",
+      "parent": "pierna_d",
+      "box": [
+        160,
+        480,
+        52,
+        34
+      ],
+      "pivot": [
+        183,
+        490
+      ],
+      "clip": "inset(6px 3px 3px 3px round 12px)"
+    },
+    {
+      "id": "torso",
+      "parent": "cadera",
+      "z": 3,
+      "box": [
+        112,
+        176,
+        98,
+        178
+      ],
+      "pivot": [
+        160,
+        300
+      ],
+      "clip": "polygon(36px 0px, 60px 0px, 60px 16px, 97px 14px, 97px 46px, 72px 54px, 68px 88px, 94px 164px, 84px 178px, 12px 178px, 2px 164px, 28px 88px, 24px 54px, 1px 46px, 1px 14px, 36px 16px)"
+    },
+    {
+      "id": "brazo_i",
+      "parent": "torso",
+      "z": -1,
+      "box": [
+        94,
+        222,
+        44,
+        84
+      ],
+      "pivot": [
+        126,
+        214
+      ],
+      "clip": {
+        "capsule": [
+          126,
+          214,
+          106,
+          272,
+          12
+        ]
+      }
+    },
+    {
+      "id": "antebrazo_i",
+      "parent": "brazo_i",
+      "box": [
+        86,
+        266,
+        34,
+        80
+      ],
+      "pivot": [
+        106,
+        272
+      ],
+      "clip": {
+        "capsule": [
+          106,
+          272,
+          98,
+          330,
+          10.5
+        ]
+      }
+    },
+    {
+      "id": "mano_i",
+      "parent": "antebrazo_i",
+      "box": [
+        82,
+        330,
+        28,
+        32
+      ],
+      "pivot": [
+        98,
+        334
+      ],
+      "clip": "ellipse(13px 15px at 14px 14px)",
+      "follow": 0.45
+    },
+    {
+      "id": "brazo_d",
+      "parent": "torso",
+      "z": 1,
+      "box": [
+        184,
+        222,
+        46,
+        84
+      ],
+      "pivot": [
+        196,
+        214
+      ],
+      "clip": {
+        "capsule": [
+          196,
+          214,
+          216,
+          274,
+          12
+        ]
+      }
+    },
+    {
+      "id": "antebrazo_d",
+      "parent": "brazo_d",
+      "box": [
+        208,
+        268,
+        34,
+        80
+      ],
+      "pivot": [
+        216,
+        274
+      ],
+      "clip": {
+        "capsule": [
+          216,
+          274,
+          224,
+          332,
+          10.5
+        ]
+      }
+    },
+    {
+      "id": "mano_d",
+      "parent": "antebrazo_d",
+      "box": [
+        212,
+        332,
+        28,
+        32
+      ],
+      "pivot": [
+        224,
+        336
+      ],
+      "clip": "ellipse(13px 15px at 14px 14px)",
+      "follow": 0.45
+    },
+    {
+      "id": "cabeza",
+      "parent": "torso",
+      "z": 2,
+      "box": [
+        102,
+        50,
+        116,
+        126
+      ],
+      "pivot": [
+        160,
+        168
+      ],
+      "clip": "ellipse(58px 64px at 58px 62px)"
+    },
+    {
+      "id": "pelo",
+      "parent": "cabeza",
+      "z": -1,
+      "box": [
+        72,
+        100,
+        41,
+        94
+      ],
+      "pivot": [
+        110,
+        114
+      ],
+      "follow": 0.62
+    }
+  ],
+  "overlays": [
+    {
+      "bone": "cabeza",
+      "role": "lid",
+      "x": 139,
+      "y": 114,
+      "w": 16,
+      "h": 18,
+      "shape": "rect",
+      "radius": 5,
+      "color": "#f7cfae"
+    },
+    {
+      "bone": "cabeza",
+      "role": "lid",
+      "x": 167,
+      "y": 114,
+      "w": 16,
+      "h": 18,
+      "shape": "rect",
+      "radius": 5,
+      "color": "#f7cfae"
+    },
+    {
+      "bone": "cabeza",
+      "role": "mouth",
+      "x": 150,
+      "y": 141,
+      "w": 20,
+      "h": 15,
+      "color": "#7d3b4c"
+    }
+  ]
+}
