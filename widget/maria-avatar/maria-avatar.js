@@ -548,6 +548,7 @@
      ====================================================================== */
 
   var SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12 4 4l6 8-6 8 16-8Z" fill="currentColor"/></svg>';
+  var WHATSAPP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.6.2s-.7.9-.9 1.1c-.2.2-.3.2-.6.1-1.7-.9-2.9-1.6-4-3.6-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5s-.6-1.5-.9-2.1c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 1.8.8 2.5.9 3.4.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg>';
 
   function Chat(host, opts, ctrl) {
     this.opts = opts || {};
@@ -603,6 +604,57 @@
     return m;
   };
 
+  // Nota de sistema centrada ("Un momento…", "Generando tu informe…"). Devuelve
+  // el nodo crudo: el que la pidió puede reescribir `.textContent` o `.remove()`
+  // cuando el trabajo de fondo termine (ver pedirIndice-style en el consumidor).
+  Chat.prototype.system = function (text) {
+    var m = el('div', 'ma-sistema', this.body);
+    m.textContent = text;
+    this.body.scrollTop = this.body.scrollHeight;
+    return m;
+  };
+
+  // Enlace destacado (CTA) suelto en el body, no dentro de una burbuja.
+  // `whatsapp: true` (por defecto) le pone el ícono y el verde reconocible;
+  // en falso queda como link simple (por ejemplo "Ver mi Índice →").
+  Chat.prototype.link = function (url, label, opts) {
+    opts = opts || {};
+    var a = el('a', opts.whatsapp === false ? 'ma-link' : 'ma-cta', this.body);
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    if (opts.whatsapp !== false) { a.innerHTML = WHATSAPP_SVG; }
+    a.appendChild(document.createTextNode(label || url));
+    this.body.scrollTop = this.body.scrollHeight;
+    return a;
+  };
+
+  // Streaming: el primer `delta` crea la burbuja y apaga "escribiendo…"; los
+  // siguientes van apendeando. `endDelta` cierra el turno (anima la boca según
+  // el largo final y aplica las respuestas rápidas, si las hay).
+  Chat.prototype.delta = function (text) {
+    if (!this._streamMsg) {
+      this.typing(false);
+      this._streamMsg = this.push('maria', '');
+    }
+    this._streamMsg.textContent += text || '';
+    this.body.scrollTop = this.body.scrollHeight;
+  };
+
+  Chat.prototype.endDelta = function (opts) {
+    var had = this._streamMsg && this._streamMsg.textContent;
+    if (had) { this.ctrl.talkFor(Math.min(6000, 900 + had.length * 42)); }
+    this._streamMsg = null;
+    this.typing(false);
+    if (opts && opts.quick) this.setQuick(opts.quick);
+  };
+
+  Chat.prototype.error = function (text) {
+    this.typing(false);
+    this._streamMsg = null;
+    return this.push('error', text || 'Algo falló.');
+  };
+
   Chat.prototype.typing = function (on) {
     if (on) {
       if (this._typing) return;
@@ -640,7 +692,12 @@
     var api = {
       typing: this.typing.bind(this),
       reply: this.reply.bind(this),
-      quick: this.setQuick.bind(this)
+      quick: this.setQuick.bind(this),
+      delta: this.delta.bind(this),
+      endDelta: this.endDelta.bind(this),
+      system: this.system.bind(this),
+      link: this.link.bind(this),
+      error: this.error.bind(this)
     };
     this.el.dispatchEvent(new CustomEvent('maria:send', { bubbles: true, detail: { text: text, api: api } }));
     if (this.opts.onSend) { this.opts.onSend(text, api); return; }

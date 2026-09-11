@@ -48,6 +48,13 @@ con la colita del globo apuntándole. Al cerrar el globo, vuelve a su lugar.
             .then(r => r.text())
             .then(r => api.reply(r));
         }
+        // Si el backend banca streaming (SSE), en vez de reply() de una:
+        //   api.delta('cada pedacito ')  → arma la burbuja al primer delta
+        //   api.endDelta({ quick: [...] })  → cierra el turno
+        // Además: api.system(texto) nota de sistema (devuelve el nodo: se le
+        // puede reescribir .textContent o mandarle .remove() cuando termine
+        // un trabajo de fondo); api.link(url, etiqueta, { whatsapp }) para un
+        // CTA (whatsapp:true por defecto = verde con ícono); api.error(texto).
       }
     });
   });

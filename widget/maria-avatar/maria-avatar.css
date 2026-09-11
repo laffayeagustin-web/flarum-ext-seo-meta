@@ -296,6 +296,53 @@
   color: #fff;
   border-bottom-right-radius: 5px;
 }
+.ma-msg[data-from="error"] {
+  align-self: center;
+  background: #fbe4e4;
+  color: #8a2c2c;
+  border: 1px solid #f0c4c4;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* nota de sistema ("Un momento…", "Generando tu informe…"): pill centrada y
+   discreta, no es un turno de la conversación */
+.ma-sistema {
+  align-self: center;
+  max-width: 90%;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: var(--ma-ink-soft);
+  background: var(--ma-surface);
+  border: 1px dashed var(--ma-line);
+  border-radius: 999px;
+  text-align: center;
+}
+
+/* CTA de WhatsApp: verde reconocible a propósito, no sigue el accent de marca */
+.ma-cta, .ma-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .18s ease, filter .18s ease;
+}
+.ma-cta:hover, .ma-link:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.ma-cta {
+  background: #25d366;
+  color: #05390f;
+}
+.ma-cta svg { width: 16px; height: 16px; fill: #05390f; }
+.ma-link {
+  background: var(--ma-accent-soft);
+  color: var(--ma-accent);
+}
+
 .ma-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
 .ma-typing span {
   width: 7px; height: 7px; border-radius: 50%;
