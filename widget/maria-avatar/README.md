@@ -76,6 +76,7 @@ regenera con `node dist/build.mjs`.
 | `dockSize` | `118` | alto cuando se va al rincón con el globo abierto |
 | `finger` | `true` | el dedo que cruza la pantalla |
 | `brushRadius` | `52` | qué tan cerca hay que pasarle al dedo para que cuente como roce |
+| `fingerOpts.once` | `false` | el dedo aparece, hace su gesto y no vuelve a programarse (ni solo, ni al cerrar el chat). Por defecto sigue reapareciendo cada `fingerOpts.interval`/`fingerReturnMs`. |
 | `accent`, `accent2`, `theme` | — | atajos para la marca |
 | `autoGreet` | `true` | saluda sola al abrirse el globo |
 

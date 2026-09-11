@@ -445,6 +445,11 @@
     this.until = performance.now() + (opts.firstDelay || 2600);
     this.pos = { x: -200, y: -200 };
     this.visible = false;
+    // `once: true` — aparece, hace su gesto y se retira para siempre (no vuelve
+    // a programarse). Sin esto, el comportamiento de siempre: reaparece cada
+    // `interval`/`fingerReturnMs` mientras el chat esté cerrado.
+    this.once = !!opts.once;
+    this.done = false;
   }
 
   Finger.prototype.setVisible = function (v) {
@@ -456,6 +461,7 @@
 
   Finger.prototype.hide = function () { this.setVisible(false); this.state = 'off'; };
   Finger.prototype.resume = function (delay) {
+    if (this.once && this.done) return;   // ya cumplió su única aparición
     this.state = 'wait';
     this.until = performance.now() + (delay || 9000);
   };
@@ -518,7 +524,8 @@
       if (p2 >= 1) {
         this.btn.style.opacity = '';
         this.setVisible(false);
-        this.resume(this.opts.interval || 12000);
+        if (this.once) { this.done = true; this.state = 'off'; }
+        else { this.resume(this.opts.interval || 12000); }
       }
     }
   };
