@@ -11,6 +11,11 @@ comunidad [MarIA GroWth](https://maria.ar/).
 
 - **`GET /sitemap.xml`**: sitemap dinamico con todos los temas de debate publicos,
   aprobados y no ocultos.
+- **`GET /llms.txt` y `GET /llms-full.txt`**: texto plano para agentes y crawlers
+  de IA ([llmstxt.org](https://llmstxt.org/)). `llms.txt` es un indice corto
+  (portada, sitemap, API publica y las ultimas 100 discusiones); `llms-full.txt`
+  trae el texto de las ultimas 50, con tope de 3000 caracteres por post y 200000
+  en total. Mismo filtro que el sitemap: no mira permisos de tags.
 - **Paginas de tema** (`/d/{id}-{slug}`): inyecta `<title>`, meta description
   mobile-friendly, Open Graph, Twitter Card y JSON-LD `DiscussionForumPosting`
   (autor, tema, descripcion, fecha de publicacion y cantidad de likes).
@@ -80,7 +85,7 @@ para este escenario, asi que no depende de que Composer genere el autoload.
 PHP plano, sin Flarum ni PHPUnit:
 
 ```bash
-php tests/JsonLdTest.php
+for t in tests/*.php; do php "$t"; done
 ```
 
 ## Licencia

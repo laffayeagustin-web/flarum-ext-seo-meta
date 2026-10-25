@@ -18,7 +18,7 @@ php tests/JsonLdTest.php                                                        
 ```
 
 Los tests son PHP plano, sin Flarum ni PHPUnit: cargan con `require` la clase que prueban, así que solo
-alcanzan clases puras (`JsonLd`, `MetaDescriptionBuilder`, …). La lógica testeable va en esas clases, no en
+alcanzan clases puras (`JsonLd`, `LlmsTxtBuilder`, `MetaDescriptionBuilder`, …). La lógica testeable va en esas clases, no en
 los controladores ni en los listeners.
 
 ## Cómo está armado
@@ -38,6 +38,6 @@ los controladores ni en los listeners.
 ## Relación con el despliegue
 
 Este repo no se despliega. Lo que corre en el foro es una copia de esta extensión que se mantiene en otro
-repo (privado) y que va **adelante**: hoy tiene además `/llms.txt` y `/llms-full.txt`. Los cambios se
-hacen y se prueban allá primero y después se portan acá. Antes de portar o de cambiar algo acá, compará
+repo (privado). Los cambios se hacen y se prueban allá primero y después se portan acá, así que puede ir
+adelantada. Antes de portar o de cambiar algo acá, compará
 las dos copias.
