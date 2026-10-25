@@ -2,6 +2,7 @@
 
 use Flarum\Discussion\Event\Started;
 use Flarum\Extend;
+use Maria\SeoMeta\Api\LlmsController;
 use Maria\SeoMeta\Api\SitemapController;
 use Maria\SeoMeta\Console\BackfillDiscussionImagesCommand;
 use Maria\SeoMeta\Content\InjectDiscussionSeoTags;
@@ -33,7 +34,9 @@ return [
         ->content(InjectForumIndexSeoTags::class),
 
     (new Extend\Routes('forum'))
-        ->get('/sitemap.xml', 'seo-meta.sitemap', SitemapController::class),
+        ->get('/sitemap.xml', 'seo-meta.sitemap', SitemapController::class)
+        ->get('/llms.txt', 'seo-meta.llms', LlmsController::class)
+        ->get('/llms-full.txt', 'seo-meta.llms-full', LlmsController::class),
 
     (new Extend\Event())
         ->listen(Started::class, GenerateDiscussionImage::class),
