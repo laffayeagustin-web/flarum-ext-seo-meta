@@ -75,6 +75,14 @@ fue desarrollada originalmente esta extension), podes instalarla "a mano":
 `extend.php` ya incluye un autoloader PSR-4 manual (`spl_autoload_register`)
 para este escenario, asi que no depende de que Composer genere el autoload.
 
+## Tests
+
+PHP plano, sin Flarum ni PHPUnit:
+
+```bash
+php tests/JsonLdTest.php
+```
+
 ## Licencia
 
 MIT

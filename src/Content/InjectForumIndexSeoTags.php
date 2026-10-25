@@ -6,6 +6,7 @@ use Flarum\Frontend\Document;
 use Flarum\Http\UrlGenerator;
 use Illuminate\Database\ConnectionInterface;
 use Maria\SeoMeta\Config;
+use Maria\SeoMeta\JsonLd;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -128,7 +129,7 @@ class InjectForumIndexSeoTags
             ],
         ];
 
-        return json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return JsonLd::encode($jsonLd);
     }
 
     private function buildItemList(): array

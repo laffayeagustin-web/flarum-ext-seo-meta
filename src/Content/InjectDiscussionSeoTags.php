@@ -8,6 +8,7 @@ use Flarum\Http\UrlGenerator;
 use Illuminate\Support\Arr;
 use Maria\SeoMeta\Config;
 use Maria\SeoMeta\DiscussionImageCache;
+use Maria\SeoMeta\JsonLd;
 use Maria\SeoMeta\MetaDescriptionBuilder;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Log\LoggerInterface;
@@ -150,7 +151,7 @@ class InjectDiscussionSeoTags
             ],
         ];
 
-        return json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return JsonLd::encode($jsonLd);
     }
 
     private function findIncluded(object $apiDocument, string $type, ?string $id): ?object
